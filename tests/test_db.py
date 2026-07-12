@@ -158,6 +158,7 @@ class TestScanRuns:
         db.close()
 
     def test_get_latest_returns_dataclass(self, tmp_path: Path) -> None:
+        """Return the most recent scan run, or ``None`` if the table is empty."""
         db = _make_db(tmp_path)
         q = Queries(db)
         db.create_scan_run("https://api.example.com")
@@ -165,6 +166,19 @@ class TestScanRuns:
         assert isinstance(run, ScanRun)
         assert run.endpoint == "https://api.example.com"
         assert run.status == "running"
+        db.close()
+
+    def test_get_run_by_id(self, tmp_path: Path) -> None:
+        """Return a scan run by its ID."""
+        db = _make_db(tmp_path)
+        q = Queries(db)
+        run_id = db.create_scan_run("https://api.example.com")
+        run = q.get_run_by_id(run_id)
+        assert run is not None
+        assert run.id == run_id
+        assert run.endpoint == "https://api.example.com"
+
+        assert q.get_run_by_id(99999) is None
         db.close()
 
 
@@ -321,8 +335,14 @@ class TestFindings:
     def test_invalid_severity_raises(self, tmp_path: Path) -> None:
         db = _make_db(tmp_path)
         run_id = db.create_scan_run("https://api.example.com")
+        conn = db.connect()
         with pytest.raises(sqlite3.IntegrityError):
-            db.save_finding(run_id, None, "headers", "critical", "high", "Title")
+            conn.execute(
+                "INSERT INTO security_findings (scan_run_id, check_type, severity, "
+                "confidence, title) VALUES (?, ?, ?, ?, ?)",
+                (run_id, "test", "extreme", "high", "Title"),
+            )
+        db.close()
         db.close()
 
     def test_invalid_confidence_raises(self, tmp_path: Path) -> None:
@@ -494,7 +514,7 @@ class TestRollback:
 
         # This should fail (invalid severity)
         with pytest.raises(sqlite3.IntegrityError):
-            db.save_finding(run_id, None, "headers", "critical", "high", "Bad")
+            db.save_finding(run_id, None, "headers", "extreme", "high", "Bad")
 
         # This should succeed
         db.save_finding(run_id, None, "headers", "medium", "high", "Good")
