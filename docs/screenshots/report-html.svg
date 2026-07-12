@@ -1,2 +1,69 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg baseProfile="full" height="450" version="1.1" width="800" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs /><rect fill="#f8fafc" height="450" width="800" x="0" y="0" /><rect fill="#ffffff" height="450" stroke="#e2e8f0" stroke-width="1" width="800" x="0" y="0" /><rect fill="#1e293b" height="70" width="800" x="0" y="0" /><text fill="white" font-family="sans-serif" font-size="24" x="40" y="45">Security Report - HTML Report</text><text fill="#0f172a" font-family="sans-serif" font-size="20" font-weight="bold" x="40" y="110">Summary</text><rect fill="#f1f5f9" height="100" rx="10" width="720" x="40" y="130" /><text fill="#64748b" font-family="sans-serif" font-size="16" x="60" y="160">Critical: 0 | High: 0 | Medium: 0 | Low: 0</text><text fill="#0f172a" font-family="sans-serif" font-size="20" font-weight="bold" x="40" y="260">Findings</text><rect fill="#ffffff" height="35" rx="5" stroke="#e2e8f0" width="720" x="40" y="280" /><text fill="#334155" font-family="sans-serif" font-size="14" x="55" y="303">Finding #1: Vulnerability detected at /endpoint/0</text><rect fill="#ffffff" height="35" rx="5" stroke="#e2e8f0" width="720" x="40" y="320" /><text fill="#334155" font-family="sans-serif" font-size="14" x="55" y="303">Finding #2: Vulnerability detected at /endpoint/1</text><rect fill="#ffffff" height="35" rx="5" stroke="#e2e8f0" width="720" x="40" y="360" /><text fill="#334155" font-family="sans-serif" font-size="14" x="55" y="303">Finding #3: Vulnerability detected at /endpoint/2</text></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Browser frame background -->
+  <rect width="800" height="500" fill="#0d1117"/>
+  
+  <!-- Browser chrome -->
+  <rect x="0" y="0" width="800" height="50" fill="#161b22"/>
+  <rect x="0" y="50" width="800" height="450" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  
+  <!-- Address bar -->
+  <rect x="100" y="12" width="600" height="26" rx="13" fill="#161b22"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" x="210" y="30" text-anchor="middle">https://api.example.com/report</text>
+  
+  <!-- Content Header -->
+  <rect x="30" y="80" width="740" height="60" fill="#161b22"/>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="22" font-weight="bold" x="40" y="120">Security Audit Report</text>
+  
+  <!-- Summary Cards -->
+  <rect x="40" y="160" width="720" height="70" rx="8" fill="#1c2333" stroke="#30363d" stroke-width="1"/>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="14" font-weight="600" x="60" y="190">🕒 Scan time: 12.3s</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="14" font-weight="600" x="300" y="190">🔍 Endpoints: 42</text>
+  <text fill="#f85149" font-family="sans-serif" font-size="14" font-weight="600" x=540 y="190">⚠️ Risk: High</text>
+  
+  <!-- Findings Section Header -->
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="18" font-weight="bold" x="40" y=255>Findings</text>
+  
+  <!-- Table Container -->
+  <rect x="40" y=270 width="720" height=210 rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  
+  <!-- Table Header -->
+  <rect x="40" y=270 width="720" height="40" fill="#161b22" rx="8"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x="60" y="295">Severity</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x="160" y="295">Endpoint</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x="360" y="295">Method</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x=520 y="295">Line</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x=640 y="295">Risk</text>
+  
+  <!-- Divider -->
+  <line x1="40" y1="310" x2="760" y2="310" stroke="#30363d" stroke-width="1"/>
+  
+  <!-- Finding Rows -->
+  <!-- Row 1: Critical -->
+  <text fill="#f85149" font-family="sans-serif" font-size="13" font-weight="600" x="60" y="340">CRITICAL</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="160" y="340">/v1/users/{id}</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="360" y="340">GET</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y="340">124</text>
+  <text fill="#f85149" font-family="sans-serif" font-size="13" x=640 y="340">IDOR</text>
+  
+  <!-- Row 2: High -->
+  <text fill="#d29922" font-family="sans-serif" font-size="13" font-weight="600" x="60" y="375">HIGH</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="160" y="375">/v1/login</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="360" y="375">POST</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y="375">156</text>
+  <text fill="#d29922" font-family="sans-serif" font-size="13" x=640 y="375">Rate Limit</text>
+  
+  <!-- Row 3: Medium -->
+  <text fill="#e3b341" font-family="sans-serif" font-size="13" font-weight="600" x="60" y="410">MEDIUM</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="160" y="410">/v1/debug</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=360 y="410">GET</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y=410">201</text>
+  <text fill="#e3b341" font-family="sans-serif" font-size="13" x=640 y=410">Verbose</text>
+  
+  <!-- Row 4: Low -->
+  <text fill="#58a6ff" font-family="sans-serif" font-size="13" font-weight="600" x="60" y=445>LOW</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=160" y=445">/v1/status</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=360" y=445">GET</text>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y=445>GET</text>
+  <text fill="#58a6ff" font-family="sans-serif" font-size="13" x=640 y=445">Info</text>
+</svg>
