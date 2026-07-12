@@ -1,7 +1,7 @@
 import time
 
+import httpx
 import pytest
-import requests
 
 from apihunter.report.dashboard import start_dashboard
 
@@ -12,7 +12,8 @@ async def test_dashboard_starts_and_responds():
     time.sleep(1)  # Wait for server to start
 
     try:
-        response = requests.get("http://127.0.0.1:8081")
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://127.0.0.1:8081")
         assert response.status_code == 200
         assert "<h1>APIHunter Dashboard</h1>" in response.text
     finally:
