@@ -1,0 +1,6 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#ffffff" />
+  <text x="50%" y="50%" font-family="monospace" font-size="24" fill="#334155" text-anchor="middle"># Security Findings Report</text>
+  <text x="50%" y="55%" font-family="monospace" font-size="18" fill="#64748b" text-anchor="middle">## Summary</text>
+  <text x="50%" y="60%" font-family="monospace" font-size="16" fill="#475569" text-anchor="middle">- Critical/High: 1</text>
+</svg>

@@ -1,0 +1,4 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#0f172a" />
+  <text x="50%" y="50%" font-family="monospace" font-size="24" fill="#38bdf8" text-anchor="middle">{ "$schema": "https://json.schemastore.org/sarif-2.1.0.json", ... }</text>
+</svg>

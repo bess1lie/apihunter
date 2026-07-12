@@ -1,18 +1,88 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.egg-info/
-dist/
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
 build/
-.venv/
-*.db
-*.sqlite3
-.reports/
-.ruff_cache/
-.pytest_cache/
-.mypy_cache/
-coverage/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Coverage
+.coverage
+.coverage.*
 htmlcov/
-.DS_Store
-scope.yaml
+*.cover
+*.pyo
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Unit test / coverage reports
+*.log
+
+# Unit test / coverage reports
+*.cover
+*.pyo
+*.pyc
+*.pyd
+
+# Translations
+*.mo
+*.pot
+
+# IDE - VSCode
+.vscode/
+
+# IDE - PyCharm
+.idea/
+
+# Local development files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Data/Logs
+*.log
+*.sql
+apihunter.db
+.mad-logs.jsonl
+SESSION_CONTEXT.md
+reproduce_error.py
+test_spec.json
+
+# Reports
+report_*.html
+report_*.md
+report_*.sarif
+
+# Other
+.DS_Store
+Thumbs.db
+venv/
+.venv/

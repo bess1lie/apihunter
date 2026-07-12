@@ -1,9 +1,13 @@
-# <img src="https://raw.githubusercontent.com/bess1lie/bounthunt/main/docs/logo.png" width="40" height="40" /> apihunter
+# <img src="docs/logo.svg" width="50" height="50" /> apihunter
 
 [![PyPI version](https://img.shields.io/pypi/v/apihunter.svg)](https://pypi.org/project/apihunter/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Versions](https://img.shields.io/pypi/pyversions/apihunter.svg)](https://pypi.org/project/apihunter/)
 [![Build Status](https://github.com/bess1lie/apihunter/actions/workflows/ci.yml/badge.svg)](https://github.com/bess1lie/apihunter/actions)
+
+<p align="center">
+  <img src="docs/banner.svg" alt="apihunter banner" width="100%" />
+</p>
 
 **apihunter** is a professional-grade, high-performance CLI tool designed for automated REST API security reconnaissance and vulnerability scanning. Part of the [bounty toolkit](https://github.com/bess1lie), it streamlines the discovery of API surfaces and the identification of critical security flaws.
 
@@ -38,6 +42,8 @@ Find all API entry points for a given target:
 apihunter discover https://api.example.com
 ```
 
+![Discovery Screenshot](docs/screenshots/discover.svg)
+
 ### Scanning
 
 Run a full security audit:
@@ -46,6 +52,8 @@ Run a full security audit:
 apihunter scan https://api.example.com
 ```
 
+![Scan Screenshot](docs/screenshots/scan.svg)
+
 ### Reporting
 
 Generate a beautiful HTML report from a scan run:
@@ -53,6 +61,12 @@ Generate a beautiful HTML report from a scan run:
 ```bash
 apihunter report <run_id> --format html
 ```
+
+![HTML Report](docs/screenshots/report-html.svg)
+
+![Markdown Report](docs/screenshots/report-md.svg)
+
+![SARIF Report](docs/screenshots/report-sarif.svg)
 
 ---
 
@@ -89,19 +103,6 @@ graph TD
 - **Discovery**: Injected providers probe targets for specification documents.
 - **Modules**: Independent analyzers run specialized security checks.
 - **Parser**: Robust parsing of OpenAPI/Swagger/GraphQL schemas.
-
----
-
-## 📄 Report Examples
-
-### HTML Report
-A visually rich, interactive report suitable for client presentations and bug bounty submissions.
-
-### Markdown Report
-Clean, documentation-friendly format for GitHub issues or personal notes.
-
-### SARIF Report
-Standardized output for integration with modern IDEs and CI/CD security pipelines.
 
 ---
 
