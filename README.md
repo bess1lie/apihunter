@@ -1,4 +1,4 @@
-# <img src="docs/logo.svg" width="50" height="50" /> apihunter
+# <img src="docs/logo.svg" width="60" height="60" /> apihunter
 
 [![PyPI version](https://img.shields.io/pypi/v/apihunter.svg)](https://pypi.org/project/apihunter/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,81 +9,71 @@
   <img src="docs/banner.svg" alt="apihunter banner" width="100%" />
 </p>
 
-**apihunter** is a professional-grade, high-performance CLI tool designed for automated REST API security reconnaissance and vulnerability scanning. Part of the [bounty toolkit](https://github.com/bess1lie), it streamlines the discovery of API surfaces and the identification of critical security flaws.
+<p align="center">
+  <strong>Automated REST API security testing CLI — OpenAPI discovery, auth analysis, and security heuristics.</strong>
+</p>
 
-[Explore Docs](#architecture) • [Report Bug](https://github.com/bess1lie/apihunter/issues) • [Contribute](#contributing)
-
----
-
-## ✨ Features
-
-- 🔍 **Automated Discovery**: Intelligent probing of well-known paths to uncover OpenAPI, Swagger, and GraphQL specifications.
-- 🛡️ **Security Heuristics**: Automated detection of common API vulnerabilities, including injection flaws, broken access control, and info leaks.
-- 📊 **Rich Reporting**: Generate professional-grade reports in **HTML**, **Markdown**, and **SARIF** formats for seamless integration with bug bounty workflows.
-- 🚀 **High Performance**: Built on `httpx` and `asyncio` for lightning-fast, concurrent scanning.
+<p align="center">
+  <a href="https://github.com/bess1lie/apihunter/issues">Report Bug</a> •
+  <a href="https://github.com/bess1lie/apihunter/contributing">Contribute</a> •
+  <a href="https://github.com/bess1lie/apihunter/releases">Releases</a>
+</p>
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Overview
+
+**apihunter** is a high-performance, modular security tool built for bug hunters and security engineers. It automs the most tedious parts of API reconnaissance: finding specification files, mapping endpoint structures, and identifying low-hanging fruit like weak authentication or information leaks.
+
+Built with `asyncio` and `httpx`, it is designed to scale with your targets.
+
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+| :--- | :--- |
+| 🔍 **Smart Discovery** | Automatically finds OpenAPI, Swagger, and GraphQL specs. |
+| 🛡️ **Heuristic Scanning** | Detects injection, IDOR, CORS misconfigs, and info leaks. |
+| 🔐 **Auth Auditing** | Analyates authentication schemes and bypass potential. |
+| 📊 **Professional Reports** | Outputs in HTML, Markdown, and SARIF for CI/CD integration. |
+| ⚡ **Blazing Fast** | Fully asynchronous engine for massive concurrency. |
+
+---
+
+## 🛠 Quick Start
 
 ### Installation
-
-Install via `pip`:
 
 ```bash
 pip install apihunter
 ```
 
-### Discovery
+### Basic Workflow
 
-Find all API entry points for a given target:
-
+1. **Discover** endpoints and specs:
 ```bash
 apihunter discover https://api.example.com
 ```
+![Discovery](docs/screenshots/discover.svg)
 
-![Discovery Screenshot](docs/screenshots/discover.svg)
-
-### Scanning
-
-Run a full security audit:
-
+2. **Scan** for vulnerabilities:
 ```bash
 apihunter scan https://api.example.com
 ```
+![Scan](docs/screenshots/scan.svg)
 
-![Scan Screenshot](docs/screenshots/scan.svg)
-
-### Reporting
-
-Generate a beautiful HTML report from a scan run:
-
+3. **Generate** a report:
 ```bash
 apihunter report <run_id> --format html
 ```
-
-![HTML Report](docs/screenshots/report-html.svg)
-
-![Markdown Report](docs/screenshots/report-md.svg)
-
-![SARIF Report](docs/screenshots/report-sarif.svg)
-
----
-
-## 🛠 CLI Reference
-
-| Command | Description |
-| :--- | :--- |
-| `discover` | Discovers API endpoints and specification documents. |
-| `scan` | Executes automated security vulnerability scans. |
-| `report` | Generates detailed reports (HTML, MD, SARIF). |
-| `version` | Shows the current version of apihunter. |
+![Report](docs/screenshots/report-html.svg)
 
 ---
 
 ## 🏗 Architecture
 
-apihunter is built with a modular, provider-based architecture designed for extensibility.
+apihunter utilizes a provider-based orchestration engine.
 
 ```mermaid
 graph TD
@@ -99,19 +89,17 @@ graph TD
     D --> F[Reporting Engine]
 ```
 
-- **Core**: Handles database management, HTTP client pooling, and configuration.
-- **Discovery**: Injected providers probe targets for specification documents.
-- **Modules**: Independent analyzers run specialized security checks.
-- **Parser**: Robust parsing of OpenAPI/Swagger/GraphQL schemas.
+- **Discovery Engine**: Injects providers to probe target surfaces.
+- **Scanner Engine**: Executes specialized analyzers against discovered endpoints.
+- **Core**: Manly manages the database, HTTP client, and scope.
 
 ---
 
 ## ⚙️ Configuration
 
-Use a YAML configuration file to define scan scope and exclusions:
+Control your scan via a `scope.yaml` file.
 
 ```yaml
-# scope.yaml
 targets:
   - https://api.example.com
 exclude_extensions:
@@ -131,39 +119,21 @@ apihunter scan https://api.example.com --scope-file scope.yaml
 
 ## 🗺 Roadmap
 
-- [ ] **Advanced Discovery**: DNS-based and subdomain brute-force discovery.
-- [ ] **GraphQL Specialized Engine**: Deep introspection and query injection.
-- [ ] **Real-time Dashboard**: WebSocket-powered live scan monitoring.
-- [ ] **Cloud Metadata Scanning**: Automated AWS/GCP/Azure metadata endpoint detection.
+- [ ] **Advanced Discovery**: DNS and subdomain enumeration integration.
+- [ ] **GraphQL Deep Scan**: Advanced query-based injection testing.
+- [ ] **Live Dashboard**: Real-time web UI for monitoring active scans.
+- [ ] **Cloud Integration**: Automated AWS/GCP/Azure metadata probing.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions make the open-source community an amazing place to learn, inspire, and create. We welcome your help!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and development process.
-
----
+We love contributions! Please follow our [CONTRIBUTING.md](CONTRIBUTING.md) to help make apihunter even better.
 
 ## 🔒 Security
 
-If you discover a security vulnerability in this project, please **do not open a public issue**. Instead, report it privately via the security contact provided in [SECURITY.md](SECURITY.md).
-
----
+If you find a vulnerability, please **do not open a public issue**. Report it privately via [SECURITY.md](SECURITY.md).
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/bess1lie">bess1lie</a>
-</p>
+[MIT](LICENSE)
