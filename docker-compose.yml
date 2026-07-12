@@ -1,0 +1,6 @@
+services:
+  apihunter:
+    build: .
+    volumes:
+      - .:/app
+    entrypoint: ["apihunter"]
