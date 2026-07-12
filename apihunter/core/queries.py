@@ -58,6 +58,11 @@ class Queries:
         row = self._conn.execute("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 1").fetchone()
         return ScanRun(**dict(row)) if row else None
 
+    def get_run_by_id(self, run_id: int) -> ScanRun | None:
+        """Return a scan run by its ID, or ``None`` if not found."""
+        row = self._conn.execute("SELECT * FROM scan_runs WHERE id = ?", (run_id,)).fetchone()
+        return ScanRun(**dict(row)) if row else None
+
     # ------------------------------------------------------------------
     # endpoints
     # ------------------------------------------------------------------

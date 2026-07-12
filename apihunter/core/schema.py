@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS security_findings (
     scan_run_id  INTEGER REFERENCES scan_runs(id),
     endpoint_id  INTEGER REFERENCES endpoints(id),
     check_type   TEXT NOT NULL,
-    severity     TEXT NOT NULL CHECK(severity IN ('info','low','medium','high')),
+    severity     TEXT NOT NULL CHECK(severity IN ('info','low','medium','high','critical')),
     confidence   TEXT NOT NULL CHECK(confidence IN ('low','medium','high')),
     title        TEXT NOT NULL,
     detail       TEXT,
