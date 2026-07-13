@@ -81,6 +81,13 @@ report_*.html
 report_*.md
 report_*.sarif
 
+# Output files
+discover_output.txt
+scan_output.txt
+
+# Literal tilde directory
+~/
+
 # Other
 .DS_Store
 Thumbs.db

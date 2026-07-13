@@ -1,6 +1,33 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg baseProfile="full" height="450" version="1.1" width="800" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs /><rect fill="#0f172a" height="450" width="800" x="0" y="0" /><rect fill="#1e293b" height="30" width="800" x="0" y="0" /><circle cx="20" cy="15" fill="#ef4444" r="6" /><circle cx="40" cy="15" fill="#f59e0b" r="6" /><circle cx="60" cy="15" fill="#10b981" r="6" /><text fill="#94a3b8" font-family="monospace" font-size="12" text-anchor="middle" x="400.0" y="20">apihunter scan</text><text fill="#f8fafc" font-family="monospace" font-size="14" x="20" y="50">Scanning target: http://localhost:8000
-</text><text fill="#f8fafc" font-family="monospace" font-size="14" x="20" y="70">Run ID: 3
-</text><text fill="#f8fafc" font-family="monospace" font-size="14" x="20" y="90">Found 1 specs. Parsing and scanning...
-</text><text fill="#34d399" font-family="monospace" font-size="14" x="20" y="110">Scan complete.
-</text></svg>
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#0d1117"/>
+  <rect x="0" y="0" width="800" height="36" fill="#161b22"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="60" cy="18" r="6" fill="#27c93f"/>
+  <text fill="#8b949e" font-family="monospace" font-size="13" x="400" y="24" text-anchor="middle">apihunter scan — bash</text>
+
+  <text fill="#3fb950" font-family="monospace" font-size="14" x="20" y="70">$ apihunter scan https://api.example.com</text>
+  <text fill="#8b949e" font-family="monospace" font-size="14" x="20" y="100">[INFO] Loading scope from scope.yaml</text>
+  <text fill="#8b949e" font-family="monospace" font-size="14" x="20" y="120">[INFO] Starting scan on 6 endpoints...</text>
+
+  <rect x="20" y="145" width="760" height="1" fill="#30363d"/>
+
+  <text fill="#f85149" font-family="monospace" font-size="14" font-weight="bold" x="20" y="170">[!] CRITICAL  IDOR on GET /v1/users/{id}</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="40" y="190">→ User IDs are sequential and accessible without ownership check</text>
+
+  <text fill="#d29922" font-family="monospace" font-size="14" font-weight="bold" x="20" y="220">[!] HIGH      Missing rate limiting on POST /v1/login</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="40" y="240">→ Brute-force attack possible, no rate limit or CAPTCHA detected</text>
+
+  <text fill="#e3b341" font-family="monospace" font-size="14" font-weight="bold" x="20" y="270">[!] MEDIUM    Verbose error on GET /v1/debug</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="40" y="290">→ Stack trace exposed in response body (internal paths visible)</text>
+
+  <text fill="#58a6ff" font-family="monospace" font-size="14" font-weight="bold" x="20" y="320">[i] LOW       Missing security headers on GET /v1/health</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="40" y="340">→ X-Content-Type-Options, X-Frame-Options not set</text>
+
+  <rect x="20" y="355" width="760" height="1" fill="#30363d"/>
+
+  <text fill="#3fb950" font-family="monospace" font-size="14" x="20" y="385">[✓] Scan completed in 12.3s — 4 findings (1 critical, 1 high, 1 medium, 1 low)</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="20" y="410">Run ID: a7b3c9  |  Report: apihunter report a7b3c9 --format html</text>
+
+  <text fill="#3fb950" font-family="monospace" font-size="13" x="20" y="440">$ █</text>
+</svg>

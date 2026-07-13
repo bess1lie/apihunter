@@ -1,4 +1,30 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg baseProfile="full" height="450" version="1.1" width="800" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs /><rect fill="#0f172a" height="450" width="800" x="0" y="0" /><rect fill="#1e293b" height="30" width="800" x="0" y="0" /><circle cx="20" cy="15" fill="#ef4444" r="6" /><circle cx="40" cy="15" fill="#f59e0b" r="6" /><circle cx="60" cy="15" fill="#10b981" r="6" /><text fill="#94a3b8" font-family="monospace" font-size="12" text-anchor="middle" x="400.0" y="20">apihunter discover</text><text fill="#f8fafc" font-family="monospace" font-size="14" x="20" y="50">Discovering endpoints for: http://localhost:8000
-</text><text fill="#34d399" font-family="monospace" font-size="14" x="20" y="70">Discovered 1 specs.
-</text></svg>
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#0d1117"/>
+  <rect x="0" y="0" width="800" height="36" fill="#161b22"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="60" cy="18" r="6" fill="#27c93f"/>
+  <text fill="#8b949e" font-family="monospace" font-size="13" x="400" y="24" text-anchor="middle">apihunter discover — bash</text>
+
+  <text fill="#3fb950" font-family="monospace" font-size="14" x="20" y="70">$ apihunter discover https://api.example.com</text>
+  <text fill="#8b949e" font-family="monospace" font-size="14" x="20" y="100">[INFO] Starting OpenAPI discovery...</text>
+  <text fill="#8b949e" font-family="monospace" font-size="14" x="20" y="120">[INFO] Probing common paths: /openapi.json, /swagger.json, /api/docs...</text>
+  <text fill="#3fb950" font-family="monospace" font-size="14" x="20" y="150">[✓] Found OpenAPI 3.0 spec at /openapi.json</text>
+  <text fill="#3fb950" font-family="monospace" font-size="14" x="20" y="170">[✓] Found Swagger UI at /api/docs</text>
+  <text fill="#8b949e" font-family="monospace" font-size="14" x="20" y="200">[INFO] Parsing 2 specs — 12 endpoints discovered</text>
+
+  <rect x="20" y="220" width="760" height="1" fill="#30363d"/>
+
+  <text fill="#58a6ff" font-family="monospace" font-size="14" font-weight="bold" x="20" y="250">Discovered Endpoints</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="20" y="270">METHOD  PATH                  AUTH       STATUS</text>
+  <text fill="#8b949e" font-family="monospace" font-size="12" x="20" y="270">──────  ────────────────────  ─────────  ──────</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="13" x="20" y="295">GET     /v1/users             JWT        200</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="13" x="20" y="315">POST    /v1/users             JWT        201</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="13" x="20" y="335">GET     /v1/users/{id}        JWT+RBAC   200</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="13" x="20" y="355">POST    /v1/login             None       200</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="13" x="20" y="375">GET     /v1/admin             JWT+RBAC   403</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="13" x="20" y="395">GET     /v1/health            None       200</text>
+
+  <rect x="20" y="410" width="760" height="1" fill="#30363d"/>
+  <text fill="#3fb950" font-family="monospace" font-size="13" x="20" y="435">[✓] Discovery complete — 6 endpoints in scope</text>
+</svg>

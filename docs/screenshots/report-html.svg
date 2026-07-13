@@ -1,69 +1,131 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
-  <!-- Browser frame background -->
+  <defs>
+    <linearGradient id="header-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="bar-critical" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f85149"/>
+      <stop offset="100%" stop-color="#da3633"/>
+    </linearGradient>
+    <linearGradient id="bar-high" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d29922"/>
+      <stop offset="100%" stop-color="#bb8009"/>
+    </linearGradient>
+    <linearGradient id="bar-medium" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e3b341"/>
+      <stop offset="100%" stop-color="#d29922"/>
+    </linearGradient>
+    <linearGradient id="bar-low" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#1f6feb"/>
+    </linearGradient>
+    <linearGradient id="bar-info" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8b949e"/>
+      <stop offset="100%" stop-color="#6e7681"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
   <rect width="800" height="500" fill="#0d1117"/>
-  
+
   <!-- Browser chrome -->
-  <rect x="0" y="0" width="800" height="50" fill="#161b22"/>
-  <rect x="0" y="50" width="800" height="450" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
-  
-  <!-- Address bar -->
-  <rect x="100" y="12" width="600" height="26" rx="13" fill="#161b22"/>
-  <text fill="#8b949e" font-family="sans-serif" font-size="12" x="210" y="30" text-anchor="middle">https://api.example.com/report</text>
-  
-  <!-- Content Header -->
-  <rect x="30" y="80" width="740" height="60" fill="#161b22"/>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="22" font-weight="bold" x="40" y="120">Security Audit Report</text>
-  
-  <!-- Summary Cards -->
-  <rect x="40" y="160" width="720" height="70" rx="8" fill="#1c2333" stroke="#30363d" stroke-width="1"/>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="14" font-weight="600" x="60" y="190">🕒 Scan time: 12.3s</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="14" font-weight="600" x="300" y="190">🔍 Endpoints: 42</text>
-  <text fill="#f85149" font-family="sans-serif" font-size="14" font-weight="600" x=540 y="190">⚠️ Risk: High</text>
-  
-  <!-- Findings Section Header -->
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="18" font-weight="bold" x="40" y=255>Findings</text>
-  
-  <!-- Table Container -->
-  <rect x="40" y=270 width="720" height=210 rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
-  
-  <!-- Table Header -->
-  <rect x="40" y=270 width="720" height="40" fill="#161b22" rx="8"/>
-  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x="60" y="295">Severity</text>
-  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x="160" y="295">Endpoint</text>
-  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x="360" y="295">Method</text>
-  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x=520 y="295">Line</text>
-  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="600" x=640 y="295">Risk</text>
-  
-  <!-- Divider -->
-  <line x1="40" y1="310" x2="760" y2="310" stroke="#30363d" stroke-width="1"/>
-  
-  <!-- Finding Rows -->
+  <rect x="0" y="0" width="800" height="44" fill="#161b22"/>
+  <circle cx="18" cy="22" r="5" fill="#ff5f56"/>
+  <circle cx="36" cy="22" r="5" fill="#ffbd2e"/>
+  <circle cx="54" cy="22" r="5" fill="#27c93f"/>
+  <rect x="80" y="14" width="640" height="18" rx="9" fill="#0d1117" stroke="#30363d" stroke-width="0.5"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="10" x="400" y="28" text-anchor="middle">https://api.example.com/report</text>
+
+  <!-- Report content area -->
+  <rect x="20" y="60" width="760" height="425" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Header -->
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="18" font-weight="bold" x="40" y="95">📊 Security Audit Report</text>
+
+  <!-- Summary bar -->
+  <rect x="40" y="110" width="720" height="50" rx="6" fill="#1c2333" stroke="#30363d" stroke-width="0.5"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" x="60" y="134">🕒 Scan: 12.3s</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" x="200" y="134">🎯 6 endpoints</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" x="340" y="134">⚠️ 4 findings</text>
+  <text fill="#f85149" font-family="sans-serif" font-size="11" font-weight="bold" x="480" y="134">■ Risk: HIGH (7.4/10)</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" x="620" y="134">📅 2026-07-13</text>
+
+  <!-- Severity distribution -->
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" font-weight="bold" x="40" y="185">Severity Distribution</text>
+
+  <rect x="40" y="195" width="100" height="18" rx="3" fill="#da3633"/>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="10" font-weight="bold" x="55" y="208">Critical: 1</text>
+  <rect x="40" y="217" width="100" height="18" rx="3" fill="#bb8009"/>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="10" font-weight="bold" x="60" y="230">High: 1</text>
+  <rect x="40" y="239" width="100" height="18" rx="3" fill="#d29922"/>
+  <text fill="#0d1117" font-family="sans-serif" font-size="10" font-weight="bold" x="55" y="252">Medium: 1</text>
+  <rect x="40" y="261" width="100" height="18" rx="3" fill="#1f6feb"/>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="10" font-weight="bold" x="58" y="274">Low: 1</text>
+  <rect x="40" y="283" width="100" height="18" rx="3" fill="#6e7681"/>
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="10" font-weight="bold" x="58" y="296">Info: 1</text>
+
+  <!-- Bar chart visualization -->
+  <rect x="160" y="195" width="240" height="18" rx="3" fill="#21262d"/>
+  <rect x="160" y="195" width="200" height="18" rx="3" fill="url(#bar-critical)"/>
+  <rect x="160" y="217" width="240" height="18" rx="3" fill="#21262d"/>
+  <rect x="160" y="217" width="160" height="18" rx="3" fill="url(#bar-high)"/>
+  <rect x="160" y="239" width="240" height="18" rx="3" fill="#21262d"/>
+  <rect x="160" y="239" width="100" height="18" rx="3" fill="url(#bar-medium)"/>
+  <rect x="160" y="261" width="240" height="18" rx="3" fill="#21262d"/>
+  <rect x="160" y="261" width="80" height="18" rx="3" fill="url(#bar-low)"/>
+  <rect x="160" y="283" width="240" height="18" rx="3" fill="#21262d"/>
+  <rect x="160" y="283" width="60" height="18" rx="3" fill="url(#bar-info)"/>
+
+  <!-- Findings table -->
+  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" font-weight="bold" x="40" y="330">Findings</text>
+
+  <!-- Table header -->
+  <rect x="40" y="340" width="720" height="28" rx="4" fill="#1c2333"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" font-weight="bold" x="55" y="359">Severity</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" font-weight="bold" x="180" y="359">Endpoint</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" font-weight="bold" x="400" y="359">Method</text>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" font-weight="bold" x="560" y="359">Risk</text>
+
+  <line x1="40" y1="368" x2="760" y2="368" stroke="#30363d" stroke-width="0.5"/>
+
   <!-- Row 1: Critical -->
-  <text fill="#f85149" font-family="sans-serif" font-size="13" font-weight="600" x="60" y="340">CRITICAL</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="160" y="340">/v1/users/{id}</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="360" y="340">GET</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y="340">124</text>
-  <text fill="#f85149" font-family="sans-serif" font-size="13" x=640 y="340">IDOR</text>
-  
+  <rect x="55" y="377" width="14" height="14" rx="3" fill="#f85149"/>
+  <text fill="#f85149" font-family="sans-serif" font-size="12" font-weight="bold" x="75" y="389">CRITICAL</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="180" y="389">/v1/users/{id}</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="400" y="389">GET</text>
+  <rect x="560" y="379" width="44" height="14" rx="3" fill="#f85149" opacity="0.15"/>
+  <text fill="#f85149" font-family="sans-serif" font-size="11" font-weight="bold" x="566" y="390">IDOR</text>
+
   <!-- Row 2: High -->
-  <text fill="#d29922" font-family="sans-serif" font-size="13" font-weight="600" x="60" y="375">HIGH</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="160" y="375">/v1/login</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="360" y="375">POST</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y="375">156</text>
-  <text fill="#d29922" font-family="sans-serif" font-size="13" x=640 y="375">Rate Limit</text>
-  
+  <rect x="55" y="401" width="14" height="14" rx="3" fill="#d29922"/>
+  <text fill="#d29922" font-family="sans-serif" font-size="12" font-weight="bold" x="75" y="413">HIGH</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="180" y="413">/v1/login</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="400" y="413">POST</text>
+  <rect x="560" y="403" width="80" height="14" rx="3" fill="#d29922" opacity="0.15"/>
+  <text fill="#d29922" font-family="sans-serif" font-size="11" font-weight="bold" x="566" y="414">No Rate Limit</text>
+
   <!-- Row 3: Medium -->
-  <text fill="#e3b341" font-family="sans-serif" font-size="13" font-weight="600" x="60" y="410">MEDIUM</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x="160" y="410">/v1/debug</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=360 y="410">GET</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y=410">201</text>
-  <text fill="#e3b341" font-family="sans-serif" font-size="13" x=640 y=410">Verbose</text>
-  
+  <rect x="55" y="425" width="14" height="14" rx="3" fill="#e3b341"/>
+  <text fill="#e3b341" font-family="sans-serif" font-size="12" font-weight="bold" x="75" y="437">MEDIUM</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="180" y="437">/v1/debug</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="400" y="437">GET</text>
+  <rect x="560" y="427" width="100" height="14" rx="3" fill="#e3b341" opacity="0.15"/>
+  <text fill="#e3b341" font-family="sans-serif" font-size="11" font-weight="bold" x="566" y="438">Verbose Error</text>
+
   <!-- Row 4: Low -->
-  <text fill="#58a6ff" font-family="sans-serif" font-size="13" font-weight="600" x="60" y=445>LOW</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=160" y=445">/v1/status</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=360" y=445">GET</text>
-  <text fill="#f0f6fc" font-family="sans-serif" font-size="13" x=520 y=445>GET</text>
-  <text fill="#58a6ff" font-family="sans-serif" font-size="13" x=640 y=445">Info</text>
+  <rect x="55" y="449" width="14" height="14" rx="3" fill="#58a6ff"/>
+  <text fill="#58a6ff" font-family="sans-serif" font-size="12" font-weight="bold" x="75" y="461">LOW</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="180" y="461">/v1/health</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="400" y="461">GET</text>
+  <rect x="560" y="451" width="120" height="14" rx="3" fill="#58a6ff" opacity="0.15"/>
+  <text fill="#58a6ff" font-family="sans-serif" font-size="11" font-weight="bold" x="566" y="462">Missing Headers</text>
+
+  <!-- Row 5: Info -->
+  <rect x="55" y="473" width="14" height="14" rx="3" fill="#8b949e"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="12" font-weight="bold" x="75" y="485">INFO</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="180" y="485">/v1/docs</text>
+  <text fill="#f0f6fc" font-family="monospace" font-size="12" x="400" y="485">GET</text>
+  <rect x="560" y="475" width="100" height="14" rx="3" fill="#8b949e" opacity="0.15"/>
+  <text fill="#8b949e" font-family="sans-serif" font-size="11" font-weight="bold" x="566" y="486">Exposed Docs</text>
 </svg>
