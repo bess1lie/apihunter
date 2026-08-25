@@ -1,14 +1,24 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.svg">
-  <img src="docs/banner-light.svg" alt="apihunter — REST API Security Testing CLI" width="100%">
-</picture>
+# <img src="docs/logo.svg" width="60" height="60" /> apihunter
 
-[![Python](https://img.shields.io/badge/Python-3.11+-FAF9F6?style=flat-square&logo=python&logoColor=4F46E5&labelColor=FAF9F6)](https://pypi.org/project/apihunter/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-FAF9F6?style=flat-square&labelColor=FAF9F6&color=E7E5E4)](https://opensource.org/licenses/MIT)
-[![Build](https://img.shields.io/github/actions/workflow/status/bess1lie/apihunter/ci.yml?branch=main&style=flat-square&logo=github&labelColor=FAF9F6&color=4F46E5)](https://github.com/bess1lie/apihunter/actions)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-FAF9F6?style=flat-square&labelColor=FAF9F6&color=4F46E5)](https://codecov.io/gh/bess1lie/apihunter)
-[![Stars](https://img.shields.io/github/stars/bess1lie/apihunter?style=flat-square&labelColor=FAF9F6&color=4F46E5)](https://github.com/bess1lie/apihunter/stargazers)
-[![Downloads](https://img.shields.io/pypi/dm/apihunter?style=flat-square&labelColor=FAF9F6&color=4F46E5)](https://pypi.org/project/apihunter/)
+[![PyPI version](https://img.shields.io/pypi/v/apihunter?color=blue&label=PyPI&style=flat-square)](https://pypi.org/project/apihunter/)
+[![Python versions](https://img.shields.io/pypi/pyversions/apihunter?style=flat-square)](https://pypi.org/project/apihunter/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/bess1lie/apihunter/ci.yml?branch=main&style=flat-square)](https://github.com/bess1lie/apihunter/actions)
+[![Code Coverage](https://img.shields.io/codecov/c/github/bess1lie/apihunter?style=flat-square)](https://codecov.io/gh/bess1lie/apihunter)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat-square)](https://pycqa.github.io/isort/)
+[![Type checks: mypy](https://img.shields.io/badge/type%20checks-mypy-blue?style=flat-square)](http://mypy-lang.org/)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow?style=flat-square)](https://github.com/PyCQA/bandit)
+[![Downloads](https://img.shields.io/pypi/dm/apihunter?style=flat-square)](https://pypi.org/project/apihunter/)
+[![GitHub stars](https://img.shields.io/github/stars/bess1lie/apihunter?style=flat-square)](https://github.com/bess1lie/apihunter/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/bess1lie/apihunter?style=flat-square)](https://github.com/bess1lie/apihunter/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/bess1lie/apihunter?style=flat-square)](https://github.com/bess1lie/apihunter/pulls)
+[![Maintainability](https://img.shields.io/badge/maintainability-high-brightgreen?style=flat-square)](https://github.com/bess1lie/apihunter)
+[![Security: LGTM](https://img.shields.io/badge/security-LGTM-brightgreen?style=flat-square)](https://github.com/bess1lie/apihunter)
+
+<p align="center">
+  <img src="docs/banner.svg" alt="apihunter banner" width="100%" />
+</p>
 
 <p align="center">
   <strong>Professional REST API security testing CLI — OpenAPI discovery, authentication auditing, heuristic scanning, and comprehensive reporting.</strong>
