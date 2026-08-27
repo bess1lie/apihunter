@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=plastic&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=plastic)](https://opensource.org/licenses/MIT)
 [![CI](https://img.shields.io/github/actions/workflow/status/bess1lie/apihunter/ci.yml?branch=main&style=plastic)](https://github.com/bess1lie/apihunter/actions)
+[![PyPI](https://img.shields.io/badge/PyPI-apihunter--bess1lie-3776AB?style=plastic&logo=pypi&logoColor=white)](https://pypi.org/project/apihunter-bess1lie/)
 [![Stars](https://img.shields.io/github/stars/bess1lie/apihunter?style=plastic)](https://github.com/bess1lie/apihunter/stargazers)
 [![Issues](https://img.shields.io/github/issues/bess1lie/apihunter?style=plastic)](https://github.com/bess1lie/apihunter/issues)
 
@@ -129,32 +130,49 @@ graph TD
 - **Scanner Engine**: Executes specialized analyzers against discovered endpoints.
 - **Core**: Manages the database, HTTP client, and scope.
 
-## 📦 Quick Start
-
-### Installation
+## 📦 Installation
 
 ```bash
-# From PyPI (recommended)
-pip install apihunter
+# From PyPI (recommended) — detection-only, no payloads
+pip install apihunter-bess1lie
+# CLI stays `apihunter`
+apihunter --help
 
-# Or from source (latest development)
+# Isolated with pipx (recommended for tools)
+pipx install apihunter-bess1lie
+
+# From source (latest dev)
 git clone https://github.com/bess1lie/apihunter.git
 cd apihunter
-pip install .
+pip install -e .
 ```
 
-### Basic usage
+## ⚡ Quick Start
+
+### Basic usage (scope-aware)
 
 ```bash
+# 0. Create scope.yaml — every request gated by allowlist
+cat > scope.yaml <<'YAML'
+targets: ["https://api.example.com"]
+allowlist: ["api.example.com"]
+YAML
+
 # 1. Discover endpoints
-apihunter discover https://api.example.com
+apihunter discover https://api.example.com --scope scope.yaml
 
-# 2. Run security scan (uses the latest discovery results)
-apihunter scan https://api.example.com
+# 2. Scan (heuristics: IDOR, CORS, auth, rate-limit — detection only)
+apihunter scan https://api.example.com --scope scope.yaml
 
-# 3. Generate a report (HTML, Markdown, or SARIF)
-apihunter report <run_id> --format html
+# 3. Report + SARIF for GitHub Code Scanning
+apihunter report <run_id> --format html -o report.html
+apihunter report <run_id> --format sarif -o apihunter.sarif
+
+# Verify install
+apihunter --help && echo "db: $(ls apihunter_*.db 2>/dev/null | head -n1)"
 ```
+
+> Requires `scope.yaml` — out-of-scope requests are blocked. See `scope.example.yaml`.
 
 ## ⚙️ Configuration
 
@@ -230,5 +248,5 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 - [**gqlhunter**](https://github.com/bess1lie/gqlhunter) - GraphQL security testing and introspection.
 
 <p align="center">
-  Made with ❤️ in Almaty · <a href="https://bess1lie.github.io">bess1lie.github.io</a>
+  <sub>detection-first · scope-aware · <a href="https://bess1lie.github.io">bess1lie.github.io</a> · <a href="mailto:bess1iework@gmail.com">contact</a></sub>
 </p>
