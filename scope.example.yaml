@@ -1,0 +1,11 @@
+# Bountyhunt scope file — copy to scope.yaml and edit with your domains.
+#   cp scope.example.yaml scope.yaml
+#
+# See docs/scope.md for wildcard semantics and can_scan vs is_in_scope.
+
+allow:
+  - "*.example.com"
+  - "api.example.org"
+
+deny:
+  - "admin.example.com"
