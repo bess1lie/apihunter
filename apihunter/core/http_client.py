@@ -166,33 +166,37 @@ class HttpClient:
             raise PermanentHttpError("HttpClient is closed")
         _validate_url(url, allow_private=self.allow_private)
         if self._sem is None:
-            self._sem = asyncio.Semaphore(max(1, int(self.rate_per_second)))
+            try:
+                self._sem = asyncio.Semaphore(max(1, int(self.rate_per_second)))
+            except RuntimeError:
+                # Trio or no loop — fallback to un-limited
+                self._sem = None  # type: ignore[assignment]
 
         merged_headers = dict(self.headers)
         extra_headers = kwargs.pop("headers", None)
         if extra_headers:
             merged_headers.update(extra_headers)
 
-        async with self._sem:
+        async def _execute() -> httpx.Response:
+            cur_url = url
             await self._rate_limit()
             last_exc: Exception | None = None
             for attempt in range(1 + self.max_retries):
                 try:
                     assert self._client is not None
-                    resp = await self._client.request(method, url, headers=merged_headers, **kwargs)
+                    resp = await self._client.request(method, cur_url, headers=merged_headers, **kwargs)
                     # Manual redirect handling with scope/SSRF re-validation
                     redirect_count = 0
                     while resp.is_redirect and redirect_count < 5:
                         location = resp.headers.get("location")
                         if not location:
                             break
-                        # Resolve relative redirect
                         from urllib.parse import urljoin
 
-                        next_url = urljoin(url, location)
+                        next_url = urljoin(cur_url, location)
                         _validate_url(next_url, allow_private=self.allow_private)
-                        url = next_url
-                        resp = await self._client.request(method, url, headers=merged_headers, **kwargs)
+                        cur_url = next_url
+                        resp = await self._client.request(method, cur_url, headers=merged_headers, **kwargs)
                         redirect_count += 1
                     # Body size guard
                     clen = resp.headers.get("content-length")
@@ -212,6 +216,14 @@ class HttpClient:
                     raise PermanentHttpError(str(exc)) from exc
             msg = f"Request to {url} failed after {self.max_retries} retries"
             raise RetryableHttpError(msg) from last_exc
+
+        # Use semaphore only if available (asyncio); trio fallback is no-limit
+        sem = self._sem
+        if sem is not None:
+            async with sem:
+                return await _execute()
+        else:
+            return await _execute()
 
     async def get(self, url: str, **kwargs: Any) -> httpx.Response:
         """Shorthand for ``request("GET", url, **kwargs)``."""

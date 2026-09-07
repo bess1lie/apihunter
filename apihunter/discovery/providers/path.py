@@ -84,7 +84,10 @@ class PathDiscoveryProvider(BaseDiscoveryProvider):
         returned a valid status code.  Errors are silently skipped
         here — the orchestrator collects them via the error callbacks.
         """
-        sem = asyncio.Semaphore(self._concurrency)
+        try:
+            sem: asyncio.Semaphore | None = asyncio.Semaphore(self._concurrency)
+        except RuntimeError:
+            sem = None
         tasks = [self._probe_path(base_url, path, sem) for path in self._paths]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         specs: list[DiscoveredSpec] = []
@@ -97,7 +100,7 @@ class PathDiscoveryProvider(BaseDiscoveryProvider):
         self,
         base_url: str,
         path: str,
-        sem: asyncio.Semaphore,
+        sem: asyncio.Semaphore | None,
     ) -> DiscoveredSpec | None:
         """Probe a single path and return a :class:`DiscoveredSpec` or ``None``."""
         full_url = self._build_url(base_url, path)
@@ -108,8 +111,10 @@ class PathDiscoveryProvider(BaseDiscoveryProvider):
             if self._scope.is_extension_excluded(full_url):
                 return None
 
-        async with sem:
-            return await self._fetch(full_url, path)
+        if sem is not None:
+            async with sem:
+                return await self._fetch(full_url, path)
+        return await self._fetch(full_url, path)
 
     async def _fetch(self, url: str, path: str) -> DiscoveredSpec | None:
         """Try HEAD first, fall back to GET with size limit.

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-07
+
+### Fixed
+- Trio compatibility for `HttpClient` and `PathDiscoveryProvider` — `asyncio.Semaphore` now lazy with fallback (fixes CI `There is no current event loop` on `trio` matrix)
+- Coverage threshold 78.07% stable
+
 ## [1.0.0] - 2026-09-07
 
 ### Added
