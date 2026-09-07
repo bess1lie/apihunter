@@ -22,6 +22,14 @@ def test_registry_registration():
 def test_default_registry():
     registry = get_default_registry()
     analyzers = registry.get_all()
-    assert len(analyzers) == 7
+    assert len(analyzers) == 1
     assert any(a.__name__ == "AuthAnalyzer" for a in analyzers)
+
+
+def test_experimental_registry():
+    from apihunter.modules.registry import get_experimental_registry
+
+    registry = get_experimental_registry()
+    analyzers = registry.get_all()
+    assert len(analyzers) == 7
     assert any(a.__name__ == "InjectionAnalyzer" for a in analyzers)

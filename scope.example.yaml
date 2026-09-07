@@ -1,11 +1,25 @@
-# Bountyhunt scope file — copy to scope.yaml and edit with your domains.
+# apihunter scope file — copy to scope.yaml and edit with your domains.
 #   cp scope.example.yaml scope.yaml
 #
-# See docs/scope.md for wildcard semantics and can_scan vs is_in_scope.
+# See docs/scope.md for wildcard semantics (allow/deny/targets/excluded_extensions).
+# All keys are optional. Empty scope = fail-closed (nothing is in scope).
 
+# Hosts allowed to scan (wildcards supported, bare domain matches subdomains)
 allow:
   - "*.example.com"
   - "api.example.org"
 
+# Hosts explicitly denied (evaluated before allow)
 deny:
   - "admin.example.com"
+
+# Concrete target URLs — used when allow is empty, host must match one of these
+targets:
+  - "https://api.example.com"
+
+# File extensions to skip during discovery (does not affect host scope)
+excluded_extensions:
+  - png
+  - jpg
+  - css
+  - js

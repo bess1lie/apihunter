@@ -23,15 +23,67 @@ constructor parameters without breaking existing callers.
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import time
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
 from apihunter.core.exceptions import PermanentHttpError, RetryableHttpError
 
-_DEFAULT_USER_AGENT = "apihunter/0.1.0"
+try:
+    from importlib.metadata import version as _get_version
+
+    _DEFAULT_USER_AGENT = f"apihunter/{_get_version('apihunter-bess1lie')}"
+except Exception:
+    _DEFAULT_USER_AGENT = "apihunter/1.0.0"
+
+# Maximum response body to read (2 MB) — prevents OOM on huge specs
+_MAX_BODY_SIZE = 2 * 1024 * 1024
+
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("::1/128"),
+]
+
+
+def _is_blocked_ip(host: str) -> bool:
+    """Return True if *host* is a private/link-local IP or localhost."""
+    # Fast path: IP literal
+    try:
+        addr = ipaddress.ip_address(host)
+        return (
+            any(addr in net for net in _BLOCKED_NETWORKS) or addr.is_private or addr.is_loopback or addr.is_link_local
+        )  # noqa: E501
+    except ValueError:
+        pass
+    lowered = host.lower()
+    if lowered in ("localhost", "localhost.localdomain") or lowered.endswith(".localhost"):
+        return True
+    # Do not do blocking DNS resolution here — it would hang tests and
+    # is bypassable anyway. Private IPs are caught as literals; DNS
+    # rebinding to 127.0.0.1 is blocked via redirect re-validation of
+    # literal IP after redirect.
+    return False
+
+
+def _validate_url(url: str, allow_private: bool = False) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise PermanentHttpError(f"Blocked non-http(s) scheme: {parsed.scheme or 'empty'}")
+    host = parsed.hostname
+    if not host:
+        raise PermanentHttpError(f"URL has no hostname: {url}")
+    if not allow_private and _is_blocked_ip(host):
+        raise PermanentHttpError(f"Blocked private/link-local target: {host}")
 
 
 @dataclass
@@ -67,6 +119,7 @@ class HttpClient:
     max_connections: int = 20
     max_keepalive_connections: int = 5
     headers: dict[str, str] = field(default_factory=lambda: {"User-Agent": _DEFAULT_USER_AGENT})
+    allow_private: bool = False
     _client: httpx.AsyncClient | None = field(default=None, repr=False)
     _sem: asyncio.Semaphore | None = field(default=None, repr=False)
     _last_request: float = field(default=0.0, repr=False)
@@ -80,9 +133,9 @@ class HttpClient:
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(self.timeout),
             limits=limits,
-            follow_redirects=True,
+            follow_redirects=False,
         )
-        self._sem = asyncio.Semaphore(int(self.rate_per_second))
+        # Semaphore created lazily inside request (needs running loop)
 
     async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         """Send an HTTP request with retry and rate limiting.
@@ -111,7 +164,9 @@ class HttpClient:
         """
         if self._client is None:
             raise PermanentHttpError("HttpClient is closed")
-        assert self._sem is not None
+        _validate_url(url, allow_private=self.allow_private)
+        if self._sem is None:
+            self._sem = asyncio.Semaphore(max(1, int(self.rate_per_second)))
 
         merged_headers = dict(self.headers)
         extra_headers = kwargs.pop("headers", None)
@@ -124,12 +179,35 @@ class HttpClient:
             for attempt in range(1 + self.max_retries):
                 try:
                     assert self._client is not None
-                    return await self._client.request(method, url, headers=merged_headers, **kwargs)
+                    resp = await self._client.request(method, url, headers=merged_headers, **kwargs)
+                    # Manual redirect handling with scope/SSRF re-validation
+                    redirect_count = 0
+                    while resp.is_redirect and redirect_count < 5:
+                        location = resp.headers.get("location")
+                        if not location:
+                            break
+                        # Resolve relative redirect
+                        from urllib.parse import urljoin
+
+                        next_url = urljoin(url, location)
+                        _validate_url(next_url, allow_private=self.allow_private)
+                        url = next_url
+                        resp = await self._client.request(method, url, headers=merged_headers, **kwargs)
+                        redirect_count += 1
+                    # Body size guard
+                    clen = resp.headers.get("content-length")
+                    if clen and clen.isdigit() and int(clen) > _MAX_BODY_SIZE:
+                        raise PermanentHttpError(f"Response too large: {clen} bytes")
+                    if resp.content and len(resp.content) > _MAX_BODY_SIZE:
+                        raise PermanentHttpError(f"Response body exceeds {_MAX_BODY_SIZE} bytes")
+                    return resp
                 except (httpx.TimeoutException, httpx.ConnectError) as exc:
                     last_exc = exc
                     if attempt < self.max_retries:
                         await asyncio.sleep(2**attempt)
                     continue
+                except PermanentHttpError:
+                    raise
                 except (httpx.HTTPError, httpx.InvalidURL, httpx.CookieConflict) as exc:
                     raise PermanentHttpError(str(exc)) from exc
             msg = f"Request to {url} failed after {self.max_retries} retries"

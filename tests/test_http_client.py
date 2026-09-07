@@ -116,7 +116,7 @@ class TestHttpClientHeaders:
             client._client.request = AsyncMock(return_value=mock_resp)
             await client.get("https://example.com/test")
             call_kwargs = client._client.request.call_args[1]
-            assert call_kwargs["headers"]["User-Agent"] == "apihunter/0.1.0"
+            assert call_kwargs["headers"]["User-Agent"].startswith("apihunter/")
 
     async def test_extra_headers_merged(self) -> None:
         async with HttpClient(timeout=5.0, rate_per_second=10000) as client:
@@ -124,7 +124,7 @@ class TestHttpClientHeaders:
             client._client.request = AsyncMock(return_value=mock_resp)
             await client.get("https://example.com/test", headers={"Authorization": "Bearer x"})
             call_kwargs = client._client.request.call_args[1]
-            assert call_kwargs["headers"]["User-Agent"] == "apihunter/0.1.0"
+            assert call_kwargs["headers"]["User-Agent"].startswith("apihunter/")
             assert call_kwargs["headers"]["Authorization"] == "Bearer x"
 
 

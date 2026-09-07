@@ -93,3 +93,7 @@ scan_output.txt
 Thumbs.db
 venv/
 .venv/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.hypothesis/

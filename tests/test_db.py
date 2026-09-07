@@ -105,7 +105,7 @@ class TestDatabaseInit:
 
     def test_tool_version_is_set(self, tmp_path: Path) -> None:
         db = _make_db(tmp_path)
-        assert db.get_metadata("tool_version") == "0.1.0"
+        assert db.get_metadata("tool_version") == "1.0.0"
         db.close()
 
 

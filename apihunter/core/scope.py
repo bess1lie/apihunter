@@ -106,8 +106,14 @@ class Scope:
         yaml_path = Path(path)
         if not yaml_path.exists():
             raise ScopeError(f"Scope file not found: {yaml_path}")
-        with yaml_path.open() as fh:
-            data = yaml.safe_load(fh)
+        # Size guard to prevent YAML bomb / OOM (64KB is ample for scope files)
+        if yaml_path.stat().st_size > 64 * 1024:
+            raise ScopeError(f"Scope file too large (>64KB): {yaml_path}")
+        with yaml_path.open(encoding="utf-8") as fh:
+            raw = fh.read(64 * 1024 + 1)
+            if len(raw) > 64 * 1024:
+                raise ScopeError(f"Scope file too large (>64KB): {yaml_path}")
+            data = yaml.safe_load(raw)
         if data is None:
             return cls()
         if not isinstance(data, dict):
@@ -168,9 +174,10 @@ class Scope:
         """
         if not self.excluded_extensions:
             return False
-        path = urlparse(path_or_url).path
+        path = urlparse(path_or_url).path.lower()
         for ext in self.excluded_extensions:
-            if path.endswith(f".{ext.lstrip('.')}"):
+            clean = ext.lstrip(".").lower()
+            if path.endswith(f".{clean}"):
                 return True
         return False
 

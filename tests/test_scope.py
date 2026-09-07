@@ -150,7 +150,7 @@ class TestExcludedExtensions:
             (["png", "jpg", "css", "js"], "https://api.example.com/api/v1/users", False),
             (["png", "jpg", "css", "js"], "https://api.example.com/data.json", False),
             (["png"], "https://api.example.com/image.png?w=100", True),
-            (["png"], "https://api.example.com/image.PNG", False),
+            (["png"], "https://api.example.com/image.PNG", True),
             ([], "https://api.example.com/logo.png", False),
         ],
         ids=[

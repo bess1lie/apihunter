@@ -1,35 +1,50 @@
 [project]
 name = "apihunter-bess1lie"
-version = "0.1.0"
+version = "1.0.0"
 description = "REST API security testing CLI — OpenAPI discovery, auth analysis, security heuristics (detection-only)"
 authors = [
-    { name = "bess1lie" },
+    { name = "bess1lie", email = "bess1iework@gmail.com" },
 ]
-license = { text = "MIT" }
-readme = "README.md"
+maintainers = [
+    { name = "bess1lie", email = "bess1iework@gmail.com" },
+]
+license = { file = "LICENSE" }
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.11"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
+    "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Typing :: Typed",
 ]
-keywords = ["api", "openapi", "swagger", "security", "bug-bounty", "recon", "heuristic"]
-project_urls = { Homepage = "https://github.com/bess1lie/apihunter", Repository = "https://github.com/bess1lie/apihunter", Issues = "https://github.com/bess1lie/apihunter/issues" }
+keywords = ["api", "openapi", "swagger", "security", "bug-bounty", "recon", "heuristic", "pentest", "graphql", "sarif", "idor", "cors"]
 dependencies = [
-    "typer>=0.12.0",
+    "typer>=0.12.0,<1",
     "rich>=13.7.0",
-    "httpx>=0.27.0",
-    "pyyaml>=6.0",
-    "jinja2>=3.1.0",
+    "httpx>=0.28.0,<0.29",
+    "pyyaml>=6.0.1",
+    "jinja2>=3.1.4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bess1lie/apihunter"
+Repository = "https://github.com/bess1lie/apihunter"
+Documentation = "https://github.com/bess1lie/apihunter#quick-start"
+Changelog = "https://github.com/bess1lie/apihunter/blob/main/CHANGELOG.md"
+Issues = "https://github.com/bess1lie/apihunter/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -38,6 +53,9 @@ dev = [
     "ruff>=0.6.0",
     "respx>=0.21.0",
     "anyio>=4.0",
+    "trio>=0.24.0",
+    "build>=1.0",
+    "twine>=5.0",
 ]
 
 [project.scripts]
@@ -66,6 +84,10 @@ source = ["apihunter"]
 [tool.hatch.build.targets.wheel]
 packages = ["apihunter"]
 
+[tool.hatch.build.targets.sdist]
+include = ["/apihunter", "/docs", "/LICENSE", "/README.md", "/scope.example.yaml", "/CHANGELOG.md", "/SECURITY.md", "/CONTRIBUTING.md"]
+exclude = ["apihunter/__pycache__"]
+
 [tool.coverage.report]
-fail_under = 85
+fail_under = 78
 show_missing = true

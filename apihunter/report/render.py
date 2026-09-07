@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html as _html
+
 from apihunter.core.models import Finding
 from apihunter.report.sarif import generate_sarif
 
@@ -27,12 +29,12 @@ def render_markdown(findings: list[Finding]) -> str:
     # Details
     lines.append("## Findings")
     for f in findings:
-        lines.append(f"### {f.title}")
-        lines.append(f"- **Severity**: {f.severity.capitalize()}")
-        lines.append(f"- **Confidence**: {f.confidence.capitalize()}")
-        lines.append(f"- **Check Type**: {f.check_type}")
-        lines.append(f"- **Detail**: {f.detail}")
-        lines.append(f"- **Remediation**: {f.remediation}")
+        lines.append(f"### {_html.escape(f.title)}")
+        lines.append(f"- **Severity**: {_html.escape(f.severity.capitalize())}")
+        lines.append(f"- **Confidence**: {_html.escape(f.confidence.capitalize())}")
+        lines.append(f"- **Check Type**: {_html.escape(f.check_type)}")
+        lines.append(f"- **Detail**: {_html.escape(f.detail)}")
+        lines.append(f"- **Remediation**: {_html.escape(f.remediation)}")
         lines.append("")
 
     return "\n".join(lines)
@@ -49,9 +51,11 @@ def render_html(findings: list[Finding]) -> str:
     medium = len([f for f in findings if f.severity == "medium"])
     low = len([f for f in findings if f.severity == "low" or f.severity == "info"])
 
-    html = [
+    parts = [
         "<html>",
-        "<head><title>Security Findings Report</title></head>",
+        "<head><title>Security Findings Report</title>"  # noqa: E501
+        '<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" '
+        "content=\"default-src 'none'; style-src 'unsafe-inline'\"></head>",
         "<body>",
         "<h1>Security Findings Report</h1>",
         "<h2>Summary</h2>",
@@ -64,18 +68,18 @@ def render_html(findings: list[Finding]) -> str:
     ]
 
     for f in findings:
-        html.append("<div>")
-        html.append(f"<h3>{f.title}</h3>")
-        html.append(f"<ul><li><strong>Severity</strong>: {f.severity.capitalize()}</li>")
-        html.append(f"<li><strong>Confidence</strong>: {f.confidence.capitalize()}</li>")
-        html.append(f"<li><strong>Check Type</strong>: {f.check_type}</li>")
-        html.append(f"<li><strong>Detail</strong>: {f.detail}</li>")
-        html.append(f"<li><strong>Remediation</strong>: {f.remediation}</li>")
-        html.append("</ul>")
-        html.append("</div>")
+        parts.append("<div>")
+        parts.append(f"<h3>{_html.escape(f.title)}</h3>")
+        parts.append(f"<ul><li><strong>Severity</strong>: {_html.escape(f.severity.capitalize())}</li>")
+        parts.append(f"<li><strong>Confidence</strong>: {_html.escape(f.confidence.capitalize())}</li>")
+        parts.append(f"<li><strong>Check Type</strong>: {_html.escape(f.check_type)}</li>")
+        parts.append(f"<li><strong>Detail</strong>: {_html.escape(f.detail)}</li>")
+        parts.append(f"<li><strong>Remediation</strong>: {_html.escape(f.remediation)}</li>")
+        parts.append("</ul>")
+        parts.append("</div>")
 
-    html.append("</body></html>")
-    return "\n".join(html)
+    parts.append("</body></html>")
+    return "\n".join(parts)
 
 
 def render_sarif(findings: list[Finding]) -> str:

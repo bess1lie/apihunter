@@ -8,7 +8,7 @@
 [![Issues](https://img.shields.io/github/issues/bess1lie/apihunter?style=plastic)](https://github.com/bess1lie/apihunter/issues)
 
 <p align="center">
-  <img src="docs/banner.svg" alt="apihunter banner" width="100%" />
+  <img src="https://raw.githubusercontent.com/bess1lie/apihunter/main/docs/banner.svg" alt="apihunter banner" width="100%" />
 </p>
 
 <p align="center">
@@ -91,6 +91,7 @@ $ apihunter report <run_id> --format html
 
 ## 🏗️ Architecture
 
+<!-- pypi:skip -->
 ```mermaid
 graph TD
     A[CLI Entry] --> B{Command}
@@ -154,14 +155,14 @@ pip install -e .
 ```bash
 # 0. Create scope.yaml — every request gated by allowlist
 cat > scope.yaml <<'YAML'
+allow: ["api.example.com"]
 targets: ["https://api.example.com"]
-allowlist: ["api.example.com"]
 YAML
 
 # 1. Discover endpoints
 apihunter discover https://api.example.com --scope scope.yaml
 
-# 2. Scan (heuristics: IDOR, CORS, auth, rate-limit — detection only)
+# 2. Scan (heuristics: auth — detection only; IDOR/CORS/injection are 🚧)
 apihunter scan https://api.example.com --scope scope.yaml
 
 # 3. Report + SARIF for GitHub Code Scanning
@@ -169,36 +170,30 @@ apihunter report <run_id> --format html -o report.html
 apihunter report <run_id> --format sarif -o apihunter.sarif
 
 # Verify install
-apihunter --help && echo "db: $(ls apihunter_*.db 2>/dev/null | head -n1)"
+apihunter --help && apihunter version
 ```
 
-> Requires `scope.yaml` — out-of-scope requests are blocked. See `scope.example.yaml`.
+> Requires `scope.yaml` — out-of-scope requests are blocked. See `scope.example.yaml` and `docs/scope.md`.
 
 ## ⚙️ Configuration
 
-Create a `scope.yaml` file to define your testing boundaries:
+Create a `scope.yaml` file to define your testing boundaries (see `docs/scope.md`):
 
 ```yaml
-scope:
-  include:
-    - "api.example.com"
-    - "internal-api.example.com"
-  exclude:
-    - "cdn.example.com"
-    - "*.test.example.com"
-
-security_checks:
-  - idor
-  - cors
-  - auth
-  - injection
-  - rate_limit
-
-reporting:
-  output_dir: "./reports"
-  include_sources: true
-  severities: ["critical", "high", "medium", "low"]
+allow:
+  - "api.example.com"
+  - "*.example.com"
+deny:
+  - "cdn.example.com"
+targets:
+  - "https://api.example.com"
+excluded_extensions:
+  - png
+  - css
+  - js
 ```
+
+All keys optional; empty = fail-closed. `allow` supports `*.` wildcards, bare domain matches subdomains.
 
 ## 🔄 Comparison with alternatives
 
@@ -217,15 +212,16 @@ reporting:
 | Status | Feature |
 |--------|---------|
 | ✅ | OpenAPI 2.0/3.0 discovery |
-| ✅ | GraphQL introspection |
-| ✅ | JWT / OAuth detection |
-| ✅ | IDOR checker |
-| ✅ | CORS checker |
 | ✅ | HTML / Markdown / SARIF reports |
-| ✅ | SQLite storage |
+| ✅ | SQLite storage + scope-aware gating |
+| ✅ | JWT / OAuth detection (auth analyzer) |
+| 🚧 | IDOR checker |
+| 🚧 | CORS checker |
 | 🚧 | Rate limiting detection |
 | 🚧 | Injection point detection (SQL/NoSQL) |
+| 🚧 | Headers / info-leak analyzers |
 | 🚧 | Plugin system for custom checks |
+| 🚧 | GraphQL introspection |
 | 🔮 | OpenTelemetry integration |
 | 🔮 | Web UI dashboard |
 | 🔮 | Kubernetes operator |
@@ -236,7 +232,9 @@ Pull requests are welcome. For major changes, open an issue first to discuss wha
 
 ## 🛡️ Security
 
-If you find a vulnerability, please report it privately to [bess1liework@gmail.com](mailto:bess1liework@gmail.com).
+If you find a vulnerability, please report it privately to [bess1iework@gmail.com](mailto:bess1iework@gmail.com) — see [SECURITY.md](SECURITY.md).
+
+> **PyPI name:** `pip install apihunter-bess1lie` (import `apihunter`, CLI `apihunter`). The short name `apihunter` is reserved for a future 1.x alias.
 
 ## 📄 License
 

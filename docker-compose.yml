@@ -1,6 +1,13 @@
 services:
   apihunter:
     build: .
+    image: ghcr.io/bess1lie/apihunter:latest
     volumes:
-      - .:/app
+      - ./scope.yaml:/app/scope.yaml:ro
+      - apihunter-data:/data
     entrypoint: ["apihunter"]
+    read_only: true
+    user: "1000:1000"
+
+volumes:
+  apihunter-data:

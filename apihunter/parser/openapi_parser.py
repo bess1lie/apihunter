@@ -19,6 +19,17 @@ def parse_spec(spec: dict[str, Any]) -> SpecResult:
     title = info.get("title", "Unknown API")
     version = info.get("version", "0.0.0")
 
+    # Base URL from servers (OpenAPI 3.x) or host+basePath (Swagger 2.0)
+    base_url = None
+    if spec.get("servers"):
+        try:
+            base_url = spec["servers"][0].get("url")
+        except (IndexError, AttributeError):
+            base_url = None
+    elif spec.get("host"):
+        scheme = (spec.get("schemes") or ["https"])[0]
+        base_url = f"{scheme}://{spec['host']}{spec.get('basePath', '')}"
+
     endpoints = []
     paths = spec.get("paths", {})
 
@@ -65,10 +76,15 @@ def parse_spec(spec: dict[str, Any]) -> SpecResult:
                         scheme = security_schemes.get(scheme_name, {})
                         auth_schemes.append(scheme.get("type", "unknown"))
 
-            # Responses
+            # Responses — skip "default" and "2XX" style keys
             responses = {}
             for code, resp in operation.get("responses", {}).items():
-                responses[int(code)] = resp.get("description")
+                try:
+                    # Handle numeric codes only; keep string keys as-is for default/2XX
+                    key = int(code) if str(code).isdigit() else str(code)
+                except (ValueError, TypeError):
+                    key = str(code)
+                responses[key] = resp.get("description") if isinstance(resp, dict) else str(resp)
 
             endpoints.append(
                 SpecEndpoint(
@@ -86,7 +102,7 @@ def parse_spec(spec: dict[str, Any]) -> SpecResult:
                 )
             )
 
-    return SpecResult(title=title, version=version, endpoints=endpoints, base_url=None, raw_spec=spec)
+    return SpecResult(title=title, version=version, endpoints=endpoints, base_url=base_url, raw_spec=spec)
 
 
 def _parse_parameter(param: dict[str, Any], components_params: dict[str, Any]) -> SpecParameter:
@@ -102,7 +118,10 @@ def _parse_parameter(param: dict[str, Any], components_params: dict[str, Any]) -
             return SpecParameter(name="unknown", location=ParameterLocation.QUERY, required=False)
 
     name = param.get("name", "unknown")
-    location = ParameterLocation(param.get("in", "query"))
+    try:
+        location = ParameterLocation(param.get("in", "query"))
+    except ValueError:
+        location = ParameterLocation.QUERY
     required = param.get("required", False)
     description = param.get("description")
 
