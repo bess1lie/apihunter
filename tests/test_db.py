@@ -104,8 +104,10 @@ class TestDatabaseInit:
         db.close()
 
     def test_tool_version_is_set(self, tmp_path: Path) -> None:
+        from apihunter import __version__
+
         db = _make_db(tmp_path)
-        assert db.get_metadata("tool_version") == "1.0.0"
+        assert db.get_metadata("tool_version") == __version__
         db.close()
 
 
