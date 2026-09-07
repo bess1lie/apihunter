@@ -1,6 +1,6 @@
 [project]
 name = "apihunter-bess1lie"
-version = "1.2.0"
+version = "1.2.1"
 description = "REST API security testing CLI — OpenAPI discovery, auth analysis, security heuristics (detection-only)"
 authors = [
     { name = "bess1lie", email = "bess1iework@gmail.com" },

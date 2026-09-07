@@ -42,7 +42,11 @@ def parse_spec(spec: dict[str, Any]) -> SpecResult:
     security_schemes = components.get("securitySchemes", {})
 
     for path, path_item in paths.items():
+        if not isinstance(path_item, dict):
+            continue
         for method, operation in path_item.items():
+            if not isinstance(operation, dict):
+                continue
             if method.lower() not in ("get", "post", "put", "delete", "patch", "options", "head", "trace"):
                 continue
 

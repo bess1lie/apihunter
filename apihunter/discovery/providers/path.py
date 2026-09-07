@@ -106,7 +106,7 @@ class PathDiscoveryProvider(BaseDiscoveryProvider):
         full_url = self._build_url(base_url, path)
 
         if self._scope is not None:
-            if not self._scope.is_in_scope(full_url):
+            if not self._scope.is_in_scope(full_url) and (self._scope.allow or self._scope.deny or self._scope.targets):
                 return None
             if self._scope.is_extension_excluded(full_url):
                 return None

@@ -157,7 +157,7 @@ def scan(
     _timeout = timeout if timeout is not None else 10.0
 
     async def _perform_scan(run_id: int):
-        async with HttpClient(allow_private=allow_private, timeout=_timeout, rate_per_second=_rate) as client:
+        async with HttpClient(allow_private=allow_private, timeout=_timeout, rate_per_second=_rate, scope=scope) as client:
             providers = [
                 PathDiscoveryProvider(client, scope=scope),
                 GraphQLDiscoveryProvider(client, scope=scope),
@@ -165,6 +165,14 @@ def scan(
             ]
             discovery = Discovery(providers)
             discovery_result = await discovery.run(target)
+            # Global executor for whole scan (not per-spec) — enforces profile budget across all specs
+            executor = Executor(client, scope, target, max_requests=_max_req, timeout=_timeout)
+            if profile == "safe":
+                registry = get_default_registry()
+            else:
+                from apihunter.modules.registry import get_experimental_registry
+
+                registry = get_experimental_registry()
 
             if not discovery_result.specs:
                 console.print("[red]No endpoints discovered. Aborting.[/red]")
@@ -224,21 +232,15 @@ def scan(
                     full = urljoin(spec_discovery.url.rsplit("/", 1)[0] + "/", endpoint.path.lstrip("/"))
                     if not scope.is_in_scope(full) and (scope.allow or scope.deny or scope.targets):
                         continue
-                    ep_id = database.save_endpoint(run_id, endpoint.path, endpoint.method, endpoint.status_code, endpoint.auth_required)
-                    path_to_id[endpoint.path] = ep_id
+                    auth_str = "required" if endpoint.auth_required else None
+                    ep_id = database.save_endpoint(run_id, endpoint.path, endpoint.method, None, auth_str)
+                    if endpoint.path not in path_to_id:
+                        path_to_id[endpoint.path] = ep_id
                     path_method_to_id[(endpoint.path, endpoint.method)] = ep_id
 
                 # --- Run analyzers ONCE per spec (fixes duplicate findings bug) ---
                 from apihunter.modules.base import AnalyzerContext
 
-                # Executor for active probes (respects scope/rate/size)
-                executor = Executor(client, scope, target, max_requests=_max_req, timeout=_timeout)
-                if profile == "safe":
-                    registry = get_default_registry()
-                else:
-                    from apihunter.modules.registry import get_experimental_registry
-
-                    registry = get_experimental_registry()
                 all_findings: list = []
                 for analyzer_cls in registry.get_all():
                     try:
@@ -296,16 +298,20 @@ def report(
     run_id: int = typer.Argument(..., help="Scan run ID"),
     format: str = typer.Option("markdown", "--format", "-f", help="Output format: markdown|html|sarif"),
     output: str | None = typer.Option(None, "--output", "-o", help="Output file (default: report_<id>.<ext>)"),
+    db: str | None = typer.Option(None, "--db", help="SQLite DB path"),
 ):
     """Generate a report for a specific scan run."""
     console.print(f"[bold blue]Generating {format} report for run {run_id}...[/bold blue]")
 
-    db_path = _resolve_db(None)
-    # Try cwd DB first if report requested without --db flag
-    for candidate in [Path("apihunter.db"), _DEFAULT_DB]:
-        if candidate.exists():
-            db_path = str(candidate.resolve())
-            break
+    if db:
+        db_path = _resolve_db(db)
+    else:
+        db_path = _resolve_db(None)
+        # Try cwd DB first if report requested without --db flag
+        for candidate in [Path("apihunter.db"), _DEFAULT_DB]:
+            if candidate.exists():
+                db_path = str(candidate.resolve())
+                break
 
     database = Database(db_path)
     database.connect()

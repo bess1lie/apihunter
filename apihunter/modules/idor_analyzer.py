@@ -113,8 +113,7 @@ class IDORAnalyzer(BaseAnalyzer):
     def _build_url_for_id(self, path: str, val: str) -> str | None:
         import re
 
-        # Replace first {param} with val
         def repl(m: re.Match[str]) -> str:
             return val
 
-        return re.sub(r"\{[^}]+\}", repl, path, count=1)
+        return re.sub(r"\{[^}]+\}", repl, path)

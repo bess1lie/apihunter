@@ -26,7 +26,7 @@ class GraphQLDiscoveryProvider(BaseDiscoveryProvider):
         specs: list[DiscoveredSpec] = []
         for path in _GRAPHQL_PATHS:
             url = base_url.rstrip("/") + path
-            if self._scope and not self._scope.is_in_scope(url):
+            if self._scope and not self._scope.is_in_scope(url) and (self._scope.allow or self._scope.deny or self._scope.targets):
                 continue
             try:
                 resp = await self._client.request("POST", url, json=_INTROSPECTION_QUERY)

@@ -95,7 +95,7 @@ class Executor:
         url = self.build_url(endpoint.path)
         if not url:
             return None
-        if self.scope and not self.scope.is_in_scope(url):
+        if self.scope and not self.scope.is_in_scope(url) and (self.scope.allow or self.scope.deny or self.scope.targets):
             return None
         m = (method or endpoint.method or "GET").upper()
         headers: dict[str, str] = {}
@@ -131,7 +131,7 @@ class Executor:
         """Probe arbitrary URL (for CORS, etc.) with scope check."""
         if not self._check_budget():
             return None
-        if self.scope and not self.scope.is_in_scope(url):
+        if self.scope and not self.scope.is_in_scope(url) and (self.scope.allow or self.scope.deny or self.scope.targets):
             return None
         self._request_count += 1
         start = time.monotonic()

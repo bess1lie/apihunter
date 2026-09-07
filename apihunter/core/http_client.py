@@ -118,6 +118,7 @@ class HttpClient:
     max_keepalive_connections: int = 5
     headers: dict[str, str] = field(default_factory=lambda: {"User-Agent": _DEFAULT_USER_AGENT})
     allow_private: bool = False
+    scope: Any | None = field(default=None, repr=False)
     _client: httpx.AsyncClient | None = field(default=None, repr=False)
     _sem: asyncio.Semaphore | None = field(default=None, repr=False)
     _last_request: float = field(default=0.0, repr=False)

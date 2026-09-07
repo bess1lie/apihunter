@@ -103,13 +103,20 @@ class Queries:
     def get_findings(self, scan_run_id: int) -> list[Finding]:
         """Return all findings for *scan_run_id* ordered by severity."""
         rows = self._conn.execute(
-            "SELECT * FROM security_findings WHERE scan_run_id = ? "
-            "ORDER BY CASE severity "
+            "SELECT sf.*, e.path as endpoint_path, e.method as endpoint_method "
+            "FROM security_findings sf LEFT JOIN endpoints e ON sf.endpoint_id = e.id "
+            "WHERE sf.scan_run_id = ? "
+            "ORDER BY CASE sf.severity "
             "  WHEN 'high' THEN 0 WHEN 'medium' THEN 1 "
-            "  WHEN 'low' THEN 2 ELSE 3 END, found_at",
+            "  WHEN 'low' THEN 2 ELSE 3 END, sf.found_at",
             (scan_run_id,),
         ).fetchall()
-        return [Finding(**dict(r)) for r in rows]
+        findings: list[Finding] = []
+        for r in rows:
+            d = dict(r)
+            # endpoint_path/method come from JOIN, not stored in findings table
+            findings.append(Finding(**d))
+        return findings
 
     # ------------------------------------------------------------------
     # fuzz_results

@@ -70,9 +70,12 @@ $ apihunter report <run_id> --format html
 - 🔐 **Authentication Detection** -- detects missing `securitySchemes`, `auth_required` without schemes, and unauthenticated sensitive paths (`/admin`, `/user`, …).
 - 🛡️ **Heuristic Security Scanning** -- active (implemented):
   - Missing authentication schemes (HIGH)
-  - Insecure `http://` servers / missing `securitySchemes` (Headers)
-  - Debug/admin endpoint exposure & verbose errors (Info Leak)
-  - *Roadmap (🚧):* IDOR/BOLA, CORS, Rate Limit, Injection — stubs in `get_experimental_registry()`
+  - CORS misconfigurations (Origin reflection, wildcard+credentials)
+  - IDOR/BOLA (path param mutation heuristic)
+  - Rate limiting (5-probe heuristic)
+  - Injection (safe SQL probe)
+  - Insecure `http://` servers / Response headers (HSTS/CSP)
+  - Info Leak (active body markers / debug endpoints)
 - 📊 **Multi‑format Reports** -- HTML (XSS-escaped + CSP), Markdown, SARIF 2.1.0 for GitHub Code Scanning.
 - 🗄️ **Local SQLite Storage** -- WAL + FK, parameterized, every scan stored with XDG `~/.local/share/apihunter/apihunter.db`.
 - ⚙️ **Scope‑aware** -- `allow/deny/targets/excluded_extensions` enforced on **every** request (`docs/scope.md`).
@@ -235,8 +238,8 @@ All profiles respect `scope.yaml`, `2MB` limit, timeout, and `allow_private=fals
 | ✅ | Auth (passive + active bypass probe) |
 | ✅ | IDOR/BOLA heuristic (active) |
 | ✅ | CORS (active Origin probe) |
-| ✅ | Rate limiting (6-probe heuristic) |
-| ✅ | Injection safe probe (`'` + SQL fragment) |
+| ✅ | Rate limiting (5-probe heuristic) |
+| ✅ | Injection safe probe (' + SQL fragment) |
 | ✅ | Spec security + response headers (HSTS/CSP) |
 | ✅ | Info leak (passive + active body markers) |
 | 🚧 | Plugin system for custom checks |

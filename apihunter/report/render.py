@@ -33,8 +33,11 @@ def render_markdown(findings: list[Finding]) -> str:
         lines.append(f"- **Severity**: {_html.escape(f.severity.capitalize())}")
         lines.append(f"- **Confidence**: {_html.escape(f.confidence.capitalize())}")
         lines.append(f"- **Check Type**: {_html.escape(f.check_type)}")
-        lines.append(f"- **Detail**: {_html.escape(f.detail)}")
-        lines.append(f"- **Remediation**: {_html.escape(f.remediation)}")
+        if getattr(f, "endpoint_path", None):
+            ep = f"{f.endpoint_method or ''} {f.endpoint_path}".strip()
+            lines.append(f"- **Endpoint**: `{_html.escape(ep)}`")
+        lines.append(f"- **Detail**: {_html.escape(f.detail or '')}")
+        lines.append(f"- **Remediation**: {_html.escape(f.remediation or '')}")
         lines.append("")
 
     return "\n".join(lines)
@@ -73,8 +76,11 @@ def render_html(findings: list[Finding]) -> str:
         parts.append(f"<ul><li><strong>Severity</strong>: {_html.escape(f.severity.capitalize())}</li>")
         parts.append(f"<li><strong>Confidence</strong>: {_html.escape(f.confidence.capitalize())}</li>")
         parts.append(f"<li><strong>Check Type</strong>: {_html.escape(f.check_type)}</li>")
-        parts.append(f"<li><strong>Detail</strong>: {_html.escape(f.detail)}</li>")
-        parts.append(f"<li><strong>Remediation</strong>: {_html.escape(f.remediation)}</li>")
+        if getattr(f, "endpoint_path", None):
+            ep = f"{f.endpoint_method or ''} {f.endpoint_path}".strip()
+            parts.append(f"<li><strong>Endpoint</strong>: <code>{_html.escape(ep)}</code></li>")
+        parts.append(f"<li><strong>Detail</strong>: {_html.escape(f.detail or '')}</li>")
+        parts.append(f"<li><strong>Remediation</strong>: {_html.escape(f.remediation or '')}</li>")
         parts.append("</ul>")
         parts.append("</div>")
 

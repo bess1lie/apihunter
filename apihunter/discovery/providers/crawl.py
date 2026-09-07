@@ -20,6 +20,13 @@ class CrawlDiscoveryProvider(BaseDiscoveryProvider):
     def name(self) -> str:
         return "crawl"
 
+    def _is_allowed(self, url: str) -> bool:
+        if not self._scope:
+            return True
+        if not (self._scope.allow or self._scope.deny or self._scope.targets):
+            return True
+        return self._scope.is_in_scope(url)
+
     async def discover(self, base_url: str) -> list[DiscoveredSpec]:
         specs: list[DiscoveredSpec] = []
         base = base_url.rstrip("/")
@@ -27,7 +34,7 @@ class CrawlDiscoveryProvider(BaseDiscoveryProvider):
         # robots.txt
         try:
             url = base + "/robots.txt"
-            if not self._scope or self._scope.is_in_scope(url):
+            if self._is_allowed(url):
                 resp = await self._client.request("GET", url)
                 if resp.status_code == 200:
                     for line in resp.text.splitlines():
@@ -52,7 +59,7 @@ class CrawlDiscoveryProvider(BaseDiscoveryProvider):
         # sitemap.xml
         try:
             url = base + "/sitemap.xml"
-            if not self._scope or self._scope.is_in_scope(url):
+            if self._is_allowed(url):
                 resp = await self._client.request("GET", url)
                 if resp.status_code == 200 and "<url" in resp.text:
                     try:
@@ -81,7 +88,7 @@ class CrawlDiscoveryProvider(BaseDiscoveryProvider):
         # root HTML for /api/ links
         try:
             url = base + "/"
-            if not self._scope or self._scope.is_in_scope(url):
+            if self._is_allowed(url):
                 resp = await self._client.request("GET", url)
                 if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("text/html"):
                     for m in re.finditer(r'["\'](/[a-z0-9/_-]*api[a-z0-9/_-]*)["\']', resp.text, re.I):

@@ -22,31 +22,31 @@ class RateLimitAnalyzer(BaseAnalyzer):
         executor = getattr(self.context, "executor", None) if self.context else None
         if not executor or not spec.endpoints:
             return []
+        
+        # Probe first endpoint (representative)
         ep = spec.endpoints[0]
         results = []
-        for _ in range(6):
+        
+        # Standard check: 5 probes
+        for _ in range(5):
             r = await executor.probe(ep)
             if not r:
                 break
             results.append(r)
             if r.status_code == 429:
-                break
-        if not results:
-            return []
-        has_429 = any(r.status_code == 429 for r in results)
-        has_retry = any("retry-after" in r.headers for r in results)
-        if has_429 or has_retry:
-            return []
-        # Only report if we actually sent 6 and none throttled — LOW heuristic
-        if len(results) >= 6 and all(200 <= r.status_code < 400 for r in results):
+                # Rate limited -> defensive behavior, not finding
+                return []
+                
+        # If no rate limiting found after 5 probes
+        if all(r.status_code < 400 for r in results):
             return [
                 Finding(
                     check_type="rate_limit",
                     severity=Severity.LOW,
                     confidence=Confidence.LOW,
                     title="No rate limiting observed (heuristic)",
-                    detail=f"Endpoint {ep.path} allowed 6 rapid requests without 429/Retry-After — verify rate limiting manually.",
-                    remediation="Enable rate limiting / throttling (e.g. 429 with Retry-After).",
+                    detail=f"Endpoint {ep.path} allowed 5 rapid requests without 429.",
+                    remediation="Enable rate limiting (429 with Retry-After).",
                     endpoint_path=ep.path,
                     endpoint_method=ep.method,
                 )

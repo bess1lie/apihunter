@@ -40,8 +40,9 @@ class InjectionAnalyzer(BaseAnalyzer):
         import re
 
         base_path = target_ep.path
-        # Build probe path: append harmless ' if query, else inject in path
-        has_query = any(str(getattr(p, "location", "")).lower() == "query" for p in (target_ep.parameters or []))
+        query_params = [p for p in (target_ep.parameters or []) if str(getattr(p, "location", "")).lower() == "query"]
+        has_query = len(query_params) > 0
+        first_qname = query_params[0].name if query_params else "test"
         from urllib.parse import urljoin
 
         if not getattr(executor, "target", None):
@@ -52,9 +53,8 @@ class InjectionAnalyzer(BaseAnalyzer):
         # Probe with '
         probe_path = base_path
         if has_query:
-            # add ?q='
             sep = "&" if "?" in probe_path else "?"
-            probe_path = probe_path + sep + "test=%27"
+            probe_path = probe_path + sep + f"{first_qname}=test%27"
         else:
             probe_path = re.sub(r"\{[^}]+\}", "1%27", probe_path, count=1)
         probe_url = urljoin(base + "/", _sub_path(probe_path))
@@ -63,18 +63,24 @@ class InjectionAnalyzer(BaseAnalyzer):
         if not r_normal or not r_probe:
             return []
         # Heuristic: probe returns 500 with SQL fragment while normal is 200
-        sql_fragments = ["sql", "syntax", "sqlite", "postgres", "mysql", "ora-", "query failed"]
+        sql_fragments = [
+            "sql syntax", "sqlstate", "sqlite", "postgres", "mysql", "ora-", 
+            "query failed", "unclosed quotation mark", "microsoft ole db provider",
+            "db2 sql error", "informix", "sybase"
+        ]
         probe_body = (r_probe.body or b"").decode(errors="ignore").lower()
         normal_body = (r_normal.body or b"").decode(errors="ignore").lower()
-        if r_probe.status_code == 500 and 200 <= r_normal.status_code < 300 and any(s in probe_body for s in sql_fragments):
-            if not any(s in normal_body for s in sql_fragments):
+        
+        # Multiple signs: 500 status + SQL fragment + different from baseline
+        if r_probe.status_code == 500 and 200 <= r_normal.status_code < 300:
+            if any(s in probe_body for s in sql_fragments) and not any(s in normal_body for s in sql_fragments):
                 return [
                     Finding(
                         check_type="injection",
                         severity=Severity.MEDIUM,
                         confidence=Confidence.LOW,
                         title="Possible SQL error in response (heuristic)",
-                        detail=f"Endpoint {target_ep.path} probe with ' returned 500 with SQL fragment — manual verification needed.",
+                        detail=f"Endpoint {target_ep.path} probe with ' returned 500 with SQL fragment.",
                         remediation="Use parameterized queries; sanitize inputs.",
                         endpoint_path=target_ep.path,
                         endpoint_method=target_ep.method,
