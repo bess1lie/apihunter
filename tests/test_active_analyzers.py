@@ -1,7 +1,7 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import httpx
+import pytest
 
 from apihunter.core.executor import Executor
 from apihunter.core.models import ScanRun
@@ -34,8 +34,8 @@ async def test_auth_active_bypass():
 
 @pytest.mark.anyio
 async def test_idor_passive():
-    from apihunter.modules.idor_analyzer import IDORAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.idor_analyzer import IDORAnalyzer
 
     ctx = AnalyzerContext()
     ep = SpecEndpoint(path="/users/{id}", method="GET")
@@ -47,8 +47,8 @@ async def test_idor_passive():
 
 @pytest.mark.anyio
 async def test_cors_active_reflected():
-    from apihunter.modules.cors_analyzer import CORSAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.cors_analyzer import CORSAnalyzer
 
     scope = Scope(allow=["api.example.com"])
     mock_resp = httpx.Response(
@@ -69,8 +69,8 @@ async def test_cors_active_reflected():
 
 @pytest.mark.anyio
 async def test_rate_limit_no_throttle():
-    from apihunter.modules.rate_limit_analyzer import RateLimitAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.rate_limit_analyzer import RateLimitAnalyzer
 
     scope = Scope(allow=["api.example.com"])
     mock_resp = httpx.Response(200, content=b"ok")
@@ -87,8 +87,8 @@ async def test_rate_limit_no_throttle():
 
 @pytest.mark.anyio
 async def test_response_headers_missing():
-    from apihunter.modules.response_headers_analyzer import ResponseHeadersAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.response_headers_analyzer import ResponseHeadersAnalyzer
 
     scope = Scope(allow=["api.example.com"])
     mock_resp = httpx.Response(200, headers={"server": "nginx"}, content=b"ok")
@@ -105,8 +105,8 @@ async def test_response_headers_missing():
 
 @pytest.mark.anyio
 async def test_injection_safe():
-    from apihunter.modules.injection_analyzer import InjectionAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.injection_analyzer import InjectionAnalyzer
 
     scope = Scope(allow=["api.example.com"])
     # Normal 200, probe 500 with SQL fragment
@@ -116,7 +116,7 @@ async def test_injection_safe():
     client.request = AsyncMock(side_effect=[normal_resp, probe_resp])
     exe = Executor(client, scope, "https://api.example.com")
     ctx = AnalyzerContext(target="https://api.example.com", scope=scope, client=client, executor=exe)
-    from apihunter.parser.models import SpecParameter, ParameterLocation
+    from apihunter.parser.models import ParameterLocation, SpecParameter
 
     ep = SpecEndpoint(path="/search", method="GET", parameters=[SpecParameter(name="q", location=ParameterLocation.QUERY, required=False)])
     spec = _make_spec([ep])
@@ -128,8 +128,8 @@ async def test_injection_safe():
 
 @pytest.mark.anyio
 async def test_info_leak_active():
-    from apihunter.modules.info_leak_analyzer import InfoLeakAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.info_leak_analyzer import InfoLeakAnalyzer
 
     scope = Scope(allow=["api.example.com"])
     mock_resp = httpx.Response(200, content=b"Traceback (most recent call last)")

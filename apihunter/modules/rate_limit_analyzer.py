@@ -22,11 +22,11 @@ class RateLimitAnalyzer(BaseAnalyzer):
         executor = getattr(self.context, "executor", None) if self.context else None
         if not executor or not spec.endpoints:
             return []
-        
+
         # Probe first endpoint (representative)
         ep = spec.endpoints[0]
         results = []
-        
+
         # Standard check: 5 probes
         for _ in range(5):
             r = await executor.probe(ep)
@@ -36,7 +36,7 @@ class RateLimitAnalyzer(BaseAnalyzer):
             if r.status_code == 429:
                 # Rate limited -> defensive behavior, not finding
                 return []
-                
+
         # If no rate limiting found after 5 probes
         if all(r.status_code < 400 for r in results):
             return [

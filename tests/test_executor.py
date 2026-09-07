@@ -1,7 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
+import pytest
 
 from apihunter.core.executor import Executor, _substitute_path_params
 from apihunter.core.scope import Scope
@@ -31,7 +31,6 @@ async def test_executor_scope_blocked():
     scope = Scope(allow=["api.example.com"], deny=[])
     client = AsyncMock()
     exe = Executor(client, scope, "https://api.example.com")
-    ep = SpecEndpoint(path="/users", method="GET", auth_required=False)
     # Try to probe out-of-scope URL via build_url -> will be in scope (api.example.com)
     # But probe_raw with evil.com should be blocked
     res = await exe.probe_raw("https://evil.com/api", method="GET")

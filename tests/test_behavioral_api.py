@@ -9,14 +9,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 import pytest
-import httpx
 
 from apihunter.core.executor import Executor
 from apihunter.core.http_client import HttpClient
 from apihunter.core.models import ScanRun
 from apihunter.core.scope import Scope
 from apihunter.parser.models import SpecEndpoint, SpecResult
-
 
 # Global counters for budget tests
 _request_counts: dict[str, int] = {}
@@ -38,20 +36,20 @@ class ControlledHandler(BaseHTTPRequestHandler):
             if auth:
                 self._send(200, b'{"msg":"private ok"}')
             else:
-                self._send(401, b'Unauthorized')
+                self._send(401, b"Unauthorized")
         elif path.startswith("/users/"):
             uid = path.split("/")[-1]
             if uid in ("1", "2"):
                 name = "Alice" if uid == "1" else "Bob"
                 self._send(200, json.dumps({"id": int(uid), "name": name}).encode())
             else:
-                self._send(404, b'Not found')
+                self._send(404, b"Not found")
         elif path.startswith("/accounts/"):
             uid = path.split("/")[-1]
             if uid in ("1", "2"):
                 self._send(200, json.dumps({"id": int(uid), "balance": 100}).encode())
             else:
-                self._send(404, b'Not found')
+                self._send(404, b"Not found")
         elif path == "/cors":
             origin = self.headers.get("Origin", "")
             self.send_response(200)
@@ -64,19 +62,19 @@ class ControlledHandler(BaseHTTPRequestHandler):
         elif path == "/ratelimit":
             cnt = _request_counts[path]
             if cnt <= 3:
-                self._send(200, b'ok')
+                self._send(200, b"ok")
             else:
                 self.send_response(429)
                 self.send_header("Retry-After", "60")
                 self.end_headers()
-                self.wfile.write(b'rate limited')
+                self.wfile.write(b"rate limited")
         elif path == "/headers":
             self.send_response(200)
             self.send_header("Server", "nginx/1.20")
             self.send_header("X-Powered-By", "PHP/7.4")
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(b'{}')
+            self.wfile.write(b"{}")
         elif path == "/debug":
             self._send(200, b'{"debug": true, "trace": "debug mode"}')
         elif path == "/error":
@@ -84,7 +82,7 @@ class ControlledHandler(BaseHTTPRequestHandler):
         elif path == "/search":
             q = qs.get("q", [""])[0] + qs.get("test", [""])[0]
             if "'" in q or "%27" in q:
-                self._send(500, b'SQL syntax error near')
+                self._send(500, b"SQL syntax error near")
             else:
                 self._send(200, b'{"results": []}')
         elif path == "/openapi.json":
@@ -94,14 +92,52 @@ class ControlledHandler(BaseHTTPRequestHandler):
                 "servers": [{"url": f"http://{self.headers.get('Host')}"}],
                 "paths": {
                     "/public": {"get": {"responses": {"200": {"description": "ok"}}}},
-                    "/private": {"get": {"security": [{"bearerAuth": []}], "responses": {"200": {"description": "ok"}, "401": {"description": "unauth"}}}},
-                    "/users/{id}": {"get": {"parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}], "responses": {"200": {"description": "ok"}}}},
+                    "/private": {
+                        "get": {
+                            "security": [{"bearerAuth": []}],
+                            "responses": {
+                                "200": {"description": "ok"},
+                                "401": {"description": "unauth"},
+                            },
+                        }
+                    },
+                    "/users/{id}": {
+                        "get": {
+                            "parameters": [
+                                {
+                                    "name": "id",
+                                    "in": "path",
+                                    "required": True,
+                                    "schema": {"type": "integer"},
+                                }
+                            ],
+                            "responses": {"200": {"description": "ok"}},
+                        }
+                    },
                     "/cors": {"get": {"responses": {"200": {"description": "ok"}}}},
-                    "/ratelimit": {"get": {"responses": {"200": {"description": "ok"}, "429": {"description": "throttled"}}}},
+                    "/ratelimit": {
+                        "get": {
+                            "responses": {
+                                "200": {"description": "ok"},
+                                "429": {"description": "throttled"},
+                            }
+                        }
+                    },
                     "/headers": {"get": {"responses": {"200": {"description": "ok"}}}},
                     "/debug": {"get": {"responses": {"200": {"description": "ok"}}}},
                     "/error": {"get": {"responses": {"200": {"description": "ok"}}}},
-                    "/search": {"get": {"parameters": [{"name": "q", "in": "query", "schema": {"type": "string"}}], "responses": {"200": {"description": "ok"}}}},
+                    "/search": {
+                        "get": {
+                            "parameters": [
+                                {
+                                    "name": "q",
+                                    "in": "query",
+                                    "schema": {"type": "string"},
+                                }
+                            ],
+                            "responses": {"200": {"description": "ok"}},
+                        }
+                    },
                 },
                 "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}}},
             }
@@ -109,13 +145,17 @@ class ControlledHandler(BaseHTTPRequestHandler):
         elif path == "/robots.txt":
             self._send(200, b"User-agent: *\nAllow: /api/openapi.json\nDisallow: /private\n", content_type="text/plain")
         elif path == "/sitemap.xml":
-            self._send(200, b'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>http://example.com/api/openapi.json</loc></url></urlset>', content_type="text/xml")
+            sitemap_xml = (
+                b'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                b"<url><loc>http://example.com/api/openapi.json</loc></url></urlset>"
+            )
+            self._send(200, sitemap_xml, content_type="text/xml")
         elif path == "/graphql" and self.command == "GET":
             self._send(200, b'{"data": {"__schema": {"queryType": {"name": "Query"}}}}', content_type="application/json")
         elif path == "/":
             self._send(200, b'<html><a href="/api/test">api</a><a href="/openapi.json">spec</a></html>', content_type="text/html")
         else:
-            self._send(404, b'Not found')
+            self._send(404, b"Not found")
 
     def do_POST(self):
         parsed = urlparse(self.path)
@@ -131,9 +171,9 @@ class ControlledHandler(BaseHTTPRequestHandler):
                 else:
                     self._send(200, b'{"data": {}}', content_type="application/json")
             except Exception:
-                self._send(400, b'bad json')
+                self._send(400, b"bad json")
         else:
-            self._send(404, b'Not found')
+            self._send(404, b"Not found")
 
     def do_HEAD(self):
         # For discovery HEAD checks, just return 200 for known paths
@@ -180,10 +220,8 @@ def controlled_api():
 async def test_executor_real_api(controlled_api):
     url, server, counts = controlled_api
     counts.clear()
-    scope = Scope(allow=[f"{url.split('://')[1].split(':')[0]}"])  # allow 127.0.0.1
     # Use allow_private to bypass private IP block
     async with HttpClient(allow_private=True) as client:
-        exe = Executor(client, scope, url, max_requests=5)
         # Use scope with no allow/deny to not block, and allow_private=True
         exe2 = Executor(client, Scope(), url, max_requests=5)
         # Override scope empty -> should not block (we fixed executor to not block when empty)
@@ -222,8 +260,8 @@ async def test_auth_analyzer_real(controlled_api):
 async def test_bola_real(controlled_api):
     url, server, counts = controlled_api
     counts.clear()
-    from apihunter.modules.idor_analyzer import IDORAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.idor_analyzer import IDORAnalyzer
 
     scope = Scope()
     async with HttpClient(allow_private=True) as client:
@@ -238,7 +276,7 @@ async def test_bola_real(controlled_api):
         analyzer = IDORAnalyzer(ctx)
         findings = await analyzer.analyze(spec, ScanRun(endpoint=url, status="running", id=1))
         # Should probe /users/1 and /users/2 both 200 with different bodies -> MEDIUM
-        assert any("BOLA" in f.title or "IDOR" in f.title or "Possible" in f.title for f in findings) or len(findings) == 0  # heuristic may or may not trigger
+        assert any("BOLA" in f.title or "IDOR" in f.title or "Possible" in f.title for f in findings) or len(findings) == 0
 
 
 @pytest.mark.anyio
@@ -268,7 +306,21 @@ def test_parser_fixtures():
         "openapi": "3.0.0",
         "info": {"title": "T", "version": "1.0"},
         "servers": [{"url": "https://api.example.com"}],
-        "paths": {"/users/{id}": {"get": {"parameters": [{"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}], "responses": {"200": {"description": "ok"}}}}},
+        "paths": {
+            "/users/{id}": {
+                "get": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "integer"},
+                        }
+                    ],
+                    "responses": {"200": {"description": "ok"}},
+                }
+            },
+        },
         "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}}},
         "security": [{"bearerAuth": []}],
     }
@@ -276,7 +328,14 @@ def test_parser_fixtures():
     assert res.endpoints[0].auth_required is True
     assert res.base_url == "https://api.example.com"
     # Swagger 2
-    swagger = {"swagger": "2.0", "host": "api.example.com", "basePath": "/v1", "schemes": ["https"], "info": {"title": "T", "version": "1.0"}, "paths": {"/public": {"get": {"responses": {"200": {"description": "ok"}}}}}}
+    swagger = {
+        "swagger": "2.0",
+        "host": "api.example.com",
+        "basePath": "/v1",
+        "schemes": ["https"],
+        "info": {"title": "T", "version": "1.0"},
+        "paths": {"/public": {"get": {"responses": {"200": {"description": "ok"}}}}},
+    }
     res2 = parse_spec(swagger)
     assert res2.base_url == "https://api.example.com/v1"
     # Malformed
@@ -341,9 +400,8 @@ def test_cli_scan_controlled_api(controlled_api, tmp_path):
 async def test_false_positive_normal_api(controlled_api):
     url, server, counts = controlled_api
     counts.clear()
-    from apihunter.modules.cors_analyzer import CORSAnalyzer
-    from apihunter.modules.rate_limit_analyzer import RateLimitAnalyzer
     from apihunter.modules.base import AnalyzerContext
+    from apihunter.modules.cors_analyzer import CORSAnalyzer
 
     scope = Scope()
     # Normal API: /public returns 200 without CORS headers, without rate limit headers
@@ -364,9 +422,9 @@ async def test_false_positive_normal_api(controlled_api):
 async def test_injection_real(controlled_api):
     url, server, counts = controlled_api
     counts.clear()
-    from apihunter.modules.injection_analyzer import InjectionAnalyzer
     from apihunter.modules.base import AnalyzerContext
-    from apihunter.parser.models import SpecParameter, ParameterLocation
+    from apihunter.modules.injection_analyzer import InjectionAnalyzer
+    from apihunter.parser.models import ParameterLocation, SpecParameter
 
     scope = Scope()
     async with HttpClient(allow_private=True) as client:
@@ -376,7 +434,11 @@ async def test_injection_real(controlled_api):
             title="Test",
             version="1.0",
             endpoints=[
-                SpecEndpoint(path="/search", method="GET", parameters=[SpecParameter(name="q", location=ParameterLocation.QUERY, required=True)])
+                SpecEndpoint(
+                    path="/search",
+                    method="GET",
+                    parameters=[SpecParameter(name="q", location=ParameterLocation.QUERY, required=True)],
+                )
             ],
             raw_spec={},
         )
@@ -387,11 +449,11 @@ async def test_injection_real(controlled_api):
 
 
 def test_ssrf_block():
-    from apihunter.core.http_client import HttpClient
     import asyncio
 
+    from apihunter.core.http_client import HttpClient
+
     async def _test():
-        scope = Scope(allow=["example.com"])
         async with HttpClient(allow_private=False) as client:
             # file:// should be blocked
             try:
@@ -406,17 +468,15 @@ def test_ssrf_block():
             except Exception as e:
                 assert "Blocked private" in str(e)
 
-    import asyncio
-
     asyncio.run(_test())
 
 
 def test_report_sarif_real_location(tmp_path):
+    import json
+
     from apihunter.core.db import Database
     from apihunter.core.queries import Queries
-    from apihunter.core.models import Finding, Severity, Confidence
     from apihunter.report.sarif import generate_sarif
-    import json
 
     db = Database(str(tmp_path / "test.db"))
     db.connect()

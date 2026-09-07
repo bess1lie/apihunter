@@ -64,13 +64,22 @@ class InjectionAnalyzer(BaseAnalyzer):
             return []
         # Heuristic: probe returns 500 with SQL fragment while normal is 200
         sql_fragments = [
-            "sql syntax", "sqlstate", "sqlite", "postgres", "mysql", "ora-", 
-            "query failed", "unclosed quotation mark", "microsoft ole db provider",
-            "db2 sql error", "informix", "sybase"
+            "sql syntax",
+            "sqlstate",
+            "sqlite",
+            "postgres",
+            "mysql",
+            "ora-",
+            "query failed",
+            "unclosed quotation mark",
+            "microsoft ole db provider",
+            "db2 sql error",
+            "informix",
+            "sybase",
         ]
         probe_body = (r_probe.body or b"").decode(errors="ignore").lower()
         normal_body = (r_normal.body or b"").decode(errors="ignore").lower()
-        
+
         # Multiple signs: 500 status + SQL fragment + different from baseline
         if r_probe.status_code == 500 and 200 <= r_normal.status_code < 300:
             if any(s in probe_body for s in sql_fragments) and not any(s in normal_body for s in sql_fragments):

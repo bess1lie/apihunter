@@ -1,8 +1,6 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-import httpx
-import respx
+import pytest
 from httpx import Response
 
 from apihunter.core.http_client import HttpClient
