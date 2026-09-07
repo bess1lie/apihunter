@@ -196,6 +196,22 @@ excluded_extensions:
 
 All keys optional; empty = fail-closed. `allow` supports `*.` wildcards, bare domain matches subdomains.
 
+## 🎛️ Scan Profiles (1.2.0)
+
+| Profile | Max requests | Rate | Checks |
+|---------|--------------|------|--------|
+| `safe` | 10 | 2/sec | passive (auth, spec_security, info_leak) |
+| `balanced` | 20 | 5/sec | + active IDOR/CORS + more |
+| `aggressive` | 50 | 10/sec | all experimental (injection, rate_limit, response_headers) |
+
+```bash
+apihunter scan https://api.example.com --scope scope.yaml --profile safe
+apihunter scan https://api.example.com --scope scope.yaml --profile balanced --timeout 15
+apihunter scan https://api.example.com --scope scope.yaml --profile aggressive --max-requests 50
+```
+
+All profiles respect `scope.yaml`, `2MB` limit, timeout, and `allow_private=false` by default.
+
 ## 🔄 Comparison with alternatives
 
 | Feature | apihunter | Postman | OWASP ZAP | Burp Suite | Custom scripts |

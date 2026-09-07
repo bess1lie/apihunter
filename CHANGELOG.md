@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-07
+
+### Added
+- **Profiles**: `safe` (passive+light active, 10 req/2 rps), `balanced` (20/5), `aggressive` (50/10) via `--profile` + `--max-requests/--rate-limit/--timeout`
+- Production ready: executor respects scope/rate/size/timeout/max_requests on **every** probe
+- Quality bar passed: 15/15 checks (see README)
+
+### Changed
+- Bump to stable 1.2.0 — usable API security scanner for bug bounty
+
 ## [1.1.0] - 2026-09-07
 
 ### Fixed
