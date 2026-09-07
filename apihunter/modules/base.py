@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 from apihunter.core.models import Finding, ScanRun
 from apihunter.parser.models import SpecResult
@@ -9,9 +10,24 @@ from apihunter.parser.models import SpecResult
 
 @dataclass(frozen=True)
 class AnalyzerContext:
-    """Context for an analyzer, potentially including session info or tools."""
+    """Context passed to every analyzer.
 
-    pass
+    Attributes
+    ----------
+    target:
+        Original scan target (e.g. https://api.example.com).
+    scope:
+        Scope object for is_in_scope checks.
+    client:
+        Shared HttpClient for active probes (None for passive analyzers).
+    executor:
+        Optional :class:`Executor` for controlled active probes.
+    """
+
+    target: str | None = None
+    scope: Any | None = None
+    client: Any | None = None
+    executor: Any | None = None
 
 
 class BaseAnalyzer(ABC):

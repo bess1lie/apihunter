@@ -340,8 +340,7 @@ class TestFindings:
         conn = db.connect()
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute(
-                "INSERT INTO security_findings (scan_run_id, check_type, severity, "
-                "confidence, title) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO security_findings (scan_run_id, check_type, severity, confidence, title) VALUES (?, ?, ?, ?, ?)",
                 (run_id, "test", "extreme", "high", "Title"),
             )
         db.close()
@@ -491,8 +490,7 @@ class TestMigrations:
         db.connect()
         # Create only the metadata table so get_schema_version works
         db.connect().execute(
-            "CREATE TABLE IF NOT EXISTS metadata "
-            "(id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL UNIQUE, value TEXT NOT NULL)"
+            "CREATE TABLE IF NOT EXISTS metadata (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL UNIQUE, value TEXT NOT NULL)"
         )
         db.connect().commit()
         assert db.get_schema_version() is None

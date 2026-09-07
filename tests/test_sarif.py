@@ -26,5 +26,7 @@ def test_generate_sarif_with_findings():
     sarif_str = generate_sarif(findings)
     sarif = json.loads(sarif_str)
     assert len(sarif["runs"][0]["results"]) == 1
-    assert "AP-AUTH-0" in sarif["runs"][0]["results"][0]["ruleId"]
+    assert sarif["runs"][0]["results"][0]["ruleId"] == "AP-AUTH"
     assert "Test Finding" in sarif["runs"][0]["results"][0]["message"]["text"]
+    # Check real location, not api-scan
+    assert sarif["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]

@@ -11,11 +11,12 @@ from rich.console import Console
 
 from apihunter.core.db import Database
 from apihunter.core.exceptions import ApihunterError, PermanentHttpError, ScopeError
+from apihunter.core.executor import Executor
 from apihunter.core.http_client import HttpClient
 from apihunter.core.queries import Queries
 from apihunter.core.scope import Scope
 from apihunter.discovery.discovery import Discovery
-from apihunter.discovery.providers import PathDiscoveryProvider
+from apihunter.discovery.providers import CrawlDiscoveryProvider, GraphQLDiscoveryProvider, PathDiscoveryProvider
 from apihunter.modules.registry import get_default_registry
 from apihunter.parser.openapi_parser import parse_spec
 from apihunter.report.render import render_html, render_markdown, render_sarif
@@ -85,8 +86,12 @@ def discover(
 
     async def _run_discovery():
         async with HttpClient() as client:
-            provider = PathDiscoveryProvider(client, scope=scope_obj)
-            discovery = Discovery([provider])
+            providers = [
+                PathDiscoveryProvider(client, scope=scope_obj),
+                GraphQLDiscoveryProvider(client, scope=scope_obj),
+                CrawlDiscoveryProvider(client, scope=scope_obj),
+            ]
+            discovery = Discovery(providers)
             return await discovery.run(target)
 
     db_path = _resolve_db(db)
@@ -101,9 +106,7 @@ def discover(
         if output:
             out = Path(output)
             out.write_text(
-                json.dumps(
-                    [s.__dict__ if hasattr(s, "__dict__") else str(s) for s in result.specs], indent=2, default=str
-                ),
+                json.dumps([s.__dict__ if hasattr(s, "__dict__") else str(s) for s in result.specs], indent=2, default=str),
                 encoding="utf-8",
             )
             console.print(f"[green]Wrote {output}[/green]")
@@ -121,15 +124,20 @@ def scan(
     target: str = typer.Argument(..., help="Target base URL"),
     scope_file: str | None = typer.Option(None, "--scope", "-s", help="Path to scope.yaml"),
     db: str | None = typer.Option(None, "--db", help="SQLite DB path"),
-    allow_private: bool = typer.Option(
-        False, "--allow-private", help="Allow scanning private/link-local IPs (lab use)"
-    ),
+    allow_private: bool = typer.Option(False, "--allow-private", help="Allow scanning private/link-local IPs (lab use)"),
+    profile: str = typer.Option("safe", "--profile", "-p", help="Scan profile: safe|balanced|aggressive"),
+    max_requests: int | None = typer.Option(None, "--max-requests", help="Max active requests (overrides profile)"),
+    rate_limit: float | None = typer.Option(None, "--rate-limit", help="Requests/sec (overrides profile)"),
+    timeout: float | None = typer.Option(None, "--timeout", help="HTTP timeout seconds"),
 ):
     """Scan target for security findings (detection-only)."""
     _validate_target(target)
     scope = _load_scope(scope_file)
     if scope_file and not scope.is_in_scope(target):
         console.print(f"[red]Target {target} is out of scope — blocked.[/red]")
+        raise typer.Exit(code=2)
+    if profile not in ("safe", "balanced", "aggressive"):
+        console.print(f"[red]Invalid profile: {profile} (choose safe|balanced|aggressive)[/red]")
         raise typer.Exit(code=2)
 
     db_path = _resolve_db(db)
@@ -138,10 +146,24 @@ def scan(
     database.initialize()
     queries = Queries(database)
 
+    # Profile defaults
+    _profile_map = {
+        "safe": {"max_requests": 10, "rate": 2.0},
+        "balanced": {"max_requests": 20, "rate": 5.0},
+        "aggressive": {"max_requests": 50, "rate": 10.0},
+    }
+    _max_req = max_requests if max_requests is not None else _profile_map[profile]["max_requests"]
+    _rate = rate_limit if rate_limit is not None else _profile_map[profile]["rate"]
+    _timeout = timeout if timeout is not None else 10.0
+
     async def _perform_scan(run_id: int):
-        async with HttpClient(allow_private=allow_private) as client:
-            provider = PathDiscoveryProvider(client, scope=scope)
-            discovery = Discovery([provider])
+        async with HttpClient(allow_private=allow_private, timeout=_timeout, rate_per_second=_rate) as client:
+            providers = [
+                PathDiscoveryProvider(client, scope=scope),
+                GraphQLDiscoveryProvider(client, scope=scope),
+                CrawlDiscoveryProvider(client, scope=scope),
+            ]
+            discovery = Discovery(providers)
             discovery_result = await discovery.run(target)
 
             if not discovery_result.specs:
@@ -193,37 +215,66 @@ def scan(
                     console.print(f"[red]Failed to parse {spec_discovery.url}: {e}[/red]")
                     continue
 
-                for endpoint in spec_result.endpoints:
-                    # Build full URL for scope check correctly
-                    from urllib.parse import urljoin
+                # --- Save all endpoints first, build map ---
+                from urllib.parse import urljoin
 
+                path_to_id: dict[str, int] = {}
+                path_method_to_id: dict[tuple[str, str], int] = {}
+                for endpoint in spec_result.endpoints:
                     full = urljoin(spec_discovery.url.rsplit("/", 1)[0] + "/", endpoint.path.lstrip("/"))
                     if not scope.is_in_scope(full) and (scope.allow or scope.deny or scope.targets):
                         continue
+                    ep_id = database.save_endpoint(run_id, endpoint.path, endpoint.method, endpoint.status_code, endpoint.auth_required)
+                    path_to_id[endpoint.path] = ep_id
+                    path_method_to_id[(endpoint.path, endpoint.method)] = ep_id
 
-                    ep_id = database.save_endpoint(
-                        run_id, endpoint.path, endpoint.method, endpoint.status_code, endpoint.auth_required
-                    )
+                # --- Run analyzers ONCE per spec (fixes duplicate findings bug) ---
+                from apihunter.modules.base import AnalyzerContext
 
+                # Executor for active probes (respects scope/rate/size)
+                executor = Executor(client, scope, target, max_requests=_max_req, timeout=_timeout)
+                if profile == "safe":
                     registry = get_default_registry()
-                    for analyzer_cls in registry.get_all():
-                        try:
-                            analyzer = analyzer_cls(context=None)
-                            findings = await analyzer.analyze(spec_result, scan_run)
-                        except (ApihunterError, ValueError, TypeError) as e:
-                            console.print(f"[yellow]Analyzer {analyzer_cls.__name__} failed: {e}[/yellow]")
-                            continue
-                        for finding in findings:
-                            database.save_finding(
-                                run_id,
-                                ep_id,
-                                finding.check_type,
-                                finding.severity,
-                                finding.confidence,
-                                finding.title,
-                                finding.detail,
-                                finding.remediation,
-                            )
+                else:
+                    from apihunter.modules.registry import get_experimental_registry
+
+                    registry = get_experimental_registry()
+                all_findings: list = []
+                for analyzer_cls in registry.get_all():
+                    try:
+                        ctx = AnalyzerContext(target=target, scope=scope, client=client, executor=executor)
+                        analyzer = analyzer_cls(context=ctx)
+                        findings = await analyzer.analyze(spec_result, scan_run)
+                        all_findings.extend(findings)
+                    except (ApihunterError, ValueError, TypeError) as e:
+                        console.print(f"[yellow]Analyzer {analyzer_cls.__name__} failed: {e}[/yellow]")
+                        continue
+
+                # --- Save findings with correct endpoint mapping ---
+                for finding in all_findings:
+                    ep_id = None
+                    # Prefer explicit mapping from Finding
+                    f_path = getattr(finding, "endpoint_path", None)
+                    f_method = getattr(finding, "endpoint_method", None)
+                    if f_path:
+                        ep_id = path_method_to_id.get((f_path, f_method or "GET")) or path_to_id.get(f_path)
+                        if ep_id is None:
+                            # case-insensitive fallback
+                            for (p, m), eid in path_method_to_id.items():
+                                if p.lower() == f_path.lower() and (not f_method or m == f_method):
+                                    ep_id = eid
+                                    break
+                    # Global findings (no path) saved with NULL endpoint_id
+                    database.save_finding(
+                        run_id,
+                        ep_id,
+                        finding.check_type,
+                        finding.severity,
+                        finding.confidence,
+                        finding.title,
+                        finding.detail,
+                        finding.remediation,
+                    )
             database.finish_scan_run(run_id)
 
     try:

@@ -136,9 +136,7 @@ class TestPathDiscoveryConfidence:
             ("/altair", DiscoveryConfidence.LOW),
         ],
     )
-    async def test_confidence_per_path(
-        self, path: str, expected_confidence: DiscoveryConfidence, _client: HttpClient, monkeypatch
-    ) -> None:
+    async def test_confidence_per_path(self, path: str, expected_confidence: DiscoveryConfidence, _client: HttpClient, monkeypatch) -> None:
         """Each of the 22 paths gets the correct confidence level."""
         monkeypatch.setattr("apihunter.core.http_client.asyncio.sleep", _no_sleep)
         with respx.mock(base_url=_BASE, assert_all_called=False) as router:

@@ -60,9 +60,7 @@ def _is_blocked_ip(host: str) -> bool:
     # Fast path: IP literal
     try:
         addr = ipaddress.ip_address(host)
-        return (
-            any(addr in net for net in _BLOCKED_NETWORKS) or addr.is_private or addr.is_loopback or addr.is_link_local
-        )  # noqa: E501
+        return any(addr in net for net in _BLOCKED_NETWORKS) or addr.is_private or addr.is_loopback or addr.is_link_local  # noqa: E501
     except ValueError:
         pass
     lowered = host.lower()

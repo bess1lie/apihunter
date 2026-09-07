@@ -93,9 +93,7 @@ def parse_spec(spec: dict[str, Any]) -> SpecResult:
                     summary=operation.get("summary"),
                     description=operation.get("description"),
                     parameters=params,
-                    request_body_required=(
-                        "requestBody" in operation and operation["requestBody"].get("required", False)
-                    ),
+                    request_body_required=("requestBody" in operation and operation["requestBody"].get("required", False)),
                     responses=responses,
                     auth_required=auth_required,
                     auth_schemes=list(set(auth_schemes)),
@@ -128,6 +126,4 @@ def _parse_parameter(param: dict[str, Any], components_params: dict[str, Any]) -
     schema = param.get("schema", {})
     schema_type = schema.get("type") if isinstance(schema, dict) else None
 
-    return SpecParameter(
-        name=name, location=location, required=required, description=description, schema_type=schema_type
-    )
+    return SpecParameter(name=name, location=location, required=required, description=description, schema_type=schema_type)

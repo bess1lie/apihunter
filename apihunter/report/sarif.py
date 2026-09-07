@@ -7,21 +7,72 @@ from apihunter.core.models import Finding
 
 def generate_sarif(findings: list[Finding]) -> str:
     """
-    Generates a minimal SARIF 2.1.0 compliant report.
+    Generates SARIF 2.1.0 with real locations.
+    Includes driver rules, severity mapping, and per-finding artifactLocation
+    (endpoint path or fallback).
     """
+    try:
+        from apihunter import __version__
+    except Exception:
+        __version__ = "1.1.0"
+
+    # Build unique rules
+    rule_ids: dict[str, dict] = {}
+    for f in findings:
+        rid = f"AP-{f.check_type.upper()}"
+        if rid not in rule_ids:
+            rule_ids[rid] = {
+                "id": rid,
+                "name": f.check_type,
+                "shortDescription": {"text": f.title},
+                "fullDescription": {"text": f.remediation or f.detail or ""},
+                "help": {"text": f.remediation or ""},
+            }
+
     sarif = {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
-        "runs": [{"tool": {"driver": {"name": "apihunter", "version": "0.1.0", "rules": []}}, "results": []}],
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "apihunter",
+                        "version": __version__,
+                        "informationUri": "https://github.com/bess1lie/apihunter",
+                        "rules": list(rule_ids.values()),
+                    }
+                },
+                "results": [],
+            }
+        ],
     }
 
-    for i, f in enumerate(findings):
+    level_map = {
+        "critical": "error",
+        "high": "error",
+        "medium": "warning",
+        "low": "note",
+        "info": "note",
+    }
+
+    for f in findings:
+        # Use endpoint_path if available, else generic
+        uri = f.endpoint_path or f"api-scan://{f.check_type}"
+        # Include method in message for clarity
+        msg = f"{f.title}: {f.detail}" if f.detail else f.title
+        if getattr(f, "endpoint_method", None):
+            msg = f"[{f.endpoint_method} {f.endpoint_path}] {msg}"
         sarif["runs"][0]["results"].append(
             {
-                "ruleId": f"AP-{f.check_type.upper()}-{i}",
-                "message": {"text": f"{f.title}: {f.detail}"},
-                "level": "error" if f.severity in ("high", "critical") else "warning",
-                "locations": [{"physicalLocation": {"artifactLocation": {"uri": "api-scan"}}}],
+                "ruleId": f"AP-{f.check_type.upper()}",
+                "message": {"text": msg},
+                "level": level_map.get(str(f.severity).lower(), "warning"),
+                "locations": [{"physicalLocation": {"artifactLocation": {"uri": uri}}}],
+                "properties": {
+                    "severity": str(f.severity),
+                    "confidence": str(f.confidence),
+                    "check_type": f.check_type,
+                },
             }
         )
 

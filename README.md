@@ -66,18 +66,17 @@ $ apihunter report <run_id> --format html
 
 ## ✨ Features
 
-- 🔎 **OpenAPI / Swagger Discovery** -- automatically finds and parses OpenAPI 2.0/3.0, Swagger UI, and GraphQL introspection endpoints.
-- 🔐 **Authentication Detection** -- detects JWT, OAuth2, Basic Auth, API keys, and missing authentication.
-- 🛡️ **Heuristic Security Scanning** -- checks for:
-  - Insecure Direct Object References (IDOR)
-  - CORS misconfigurations
-  - SQL/NoSQL injection points (detection only)
-  - Rate limiting absence
-  - Information disclosure (verbose errors, stack traces)
-- 📊 **Multi‑format Reports** -- HTML (interactive dashboard), Markdown (for docs), SARIF (for GitHub Code Scanning).
-- 🗄️ **Local SQLite Storage** -- every scan is stored, enabling historical comparison and audit trails.
-- ⚙️ **Scope‑aware** -- respect `scope.yaml` to focus on specific domains, paths, and exclude third‑party endpoints.
-- 🧩 **Extensible** -- plugin‑based architecture to add custom checks or providers.
+- 🔎 **OpenAPI / Swagger Discovery** -- probes 22 well-known paths (`/openapi.json`, `/swagger.json`, `/v3/api-docs`, `/graphql`, etc.), parses OpenAPI 2.0/3.0 & Swagger `host+basePath`.
+- 🔐 **Authentication Detection** -- detects missing `securitySchemes`, `auth_required` without schemes, and unauthenticated sensitive paths (`/admin`, `/user`, …).
+- 🛡️ **Heuristic Security Scanning** -- active (implemented):
+  - Missing authentication schemes (HIGH)
+  - Insecure `http://` servers / missing `securitySchemes` (Headers)
+  - Debug/admin endpoint exposure & verbose errors (Info Leak)
+  - *Roadmap (🚧):* IDOR/BOLA, CORS, Rate Limit, Injection — stubs in `get_experimental_registry()`
+- 📊 **Multi‑format Reports** -- HTML (XSS-escaped + CSP), Markdown, SARIF 2.1.0 for GitHub Code Scanning.
+- 🗄️ **Local SQLite Storage** -- WAL + FK, parameterized, every scan stored with XDG `~/.local/share/apihunter/apihunter.db`.
+- ⚙️ **Scope‑aware** -- `allow/deny/targets/excluded_extensions` enforced on **every** request (`docs/scope.md`).
+- 🧩 **Extensible** -- `AnalyzerContext(target, scope, client)` + `AnalyzerRegistry` for custom checks.
 
 ## 🛠️ Tech Stack
 
@@ -162,8 +161,10 @@ YAML
 # 1. Discover endpoints
 apihunter discover https://api.example.com --scope scope.yaml
 
-# 2. Scan (heuristics: auth — detection only; IDOR/CORS/injection are 🚧)
-apihunter scan https://api.example.com --scope scope.yaml
+# 2. Scan — profiles: safe (passive+light active, 10 req), balanced (20), aggressive (50)
+apihunter scan https://api.example.com --scope scope.yaml --profile safe
+apihunter scan https://api.example.com --scope scope.yaml --profile balanced  # default active: auth, IDOR, CORS
+apihunter scan https://api.example.com --scope scope.yaml --profile aggressive --max-requests 50 --rate-limit 10
 
 # 3. Report + SARIF for GitHub Code Scanning
 apihunter report <run_id> --format html -o report.html
@@ -211,17 +212,18 @@ All keys optional; empty = fail-closed. `allow` supports `*.` wildcards, bare do
 
 | Status | Feature |
 |--------|---------|
-| ✅ | OpenAPI 2.0/3.0 discovery |
-| ✅ | HTML / Markdown / SARIF reports |
-| ✅ | SQLite storage + scope-aware gating |
-| ✅ | JWT / OAuth detection (auth analyzer) |
-| 🚧 | IDOR checker |
-| 🚧 | CORS checker |
-| 🚧 | Rate limiting detection |
-| 🚧 | Injection point detection (SQL/NoSQL) |
-| 🚧 | Headers / info-leak analyzers |
+| ✅ | OpenAPI 2.0/3.0 discovery + crawl (robots/sitemap/HTML) |
+| ✅ | GraphQL introspection (`/graphql` POST) |
+| ✅ | HTML / Markdown / SARIF (real locations) |
+| ✅ | SQLite storage + scope-aware gating + executor |
+| ✅ | Auth (passive + active bypass probe) |
+| ✅ | IDOR/BOLA heuristic (active) |
+| ✅ | CORS (active Origin probe) |
+| ✅ | Rate limiting (6-probe heuristic) |
+| ✅ | Injection safe probe (`'` + SQL fragment) |
+| ✅ | Spec security + response headers (HSTS/CSP) |
+| ✅ | Info leak (passive + active body markers) |
 | 🚧 | Plugin system for custom checks |
-| 🚧 | GraphQL introspection |
 | 🔮 | OpenTelemetry integration |
 | 🔮 | Web UI dashboard |
 | 🔮 | Kubernetes operator |

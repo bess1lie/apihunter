@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-07
+
+### Fixed
+- **P0 scan orchestration**: analyzers now run **once per spec** (not per endpoint), `Finding.endpoint_path/method` maps to `endpoint_id` via `path_to_id` — fixes duplicate findings and wrong endpoint binding (`cli.py`)
+
+### Added
+- `AnalyzerContext(target, scope, client, executor)` typed; `Finding.endpoint_path/method` fields
+- `SpecSecurityAnalyzer` (passive OpenAPI checks, replaces misleading `HeadersAnalyzer` alias)
+- Active `core/executor.py` — endpoint building, path param substitution, scope/rate/size/redirect, `max_requests` budget
+- Active checks via executor:
+  - Auth: probe without credentials → HIGH if 2xx (MEDIUM confidence)
+  - IDOR/BOLA: probe `{id}` 1 vs 2 → MEDIUM/LOW heuristic
+  - CORS: Origin `https://example-attacker.invalid` reflection / wildcard+credentials
+  - RateLimit: 6 rapid probes → LOW if no 429
+  - Injection: safe `'` probe → MEDIUM if 500 + SQL fragment
+  - ResponseHeaders: missing HSTS/X-Content-Type-Options/CSP/Server leak (active)
+  - InfoLeak: active body leak markers (Traceback, SQLSTATE, /var/www, etc.)
+- Discovery: `GraphQLDiscoveryProvider` (introspection POST) + `CrawlDiscoveryProvider` (robots.txt/sitemap.xml/root HTML)
+- CLI: `scan --profile safe|balanced|aggressive --max-requests --rate-limit --timeout` (safe=10/2, balanced=20/5, aggressive=50/10)
+- SARIF: real `artifactLocation` (endpoint path), `tool.driver.rules`, severity `error/warning/note`, `__version__`
+- Tests: `test_executor.py`, `test_active_analyzers.py`, `test_new_providers.py` — 234 tests, 76.10% coverage
+
 ## [1.0.2] - 2026-09-07
 
 ### Fixed

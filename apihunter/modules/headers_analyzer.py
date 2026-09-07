@@ -7,12 +7,18 @@ from apihunter.parser.models import SpecResult
 
 class HeadersAnalyzer(BaseAnalyzer):
     """
-    Analyzes for missing security headers.
-    Identifies if endpoints are missing headers like HSTS, CSP, X-Content-Type-Options, etc.
+    DEPRECATED alias for SpecSecurityAnalyzer (passive OpenAPI checks).
+
+    For real HTTP response header checks (HSTS, CSP, X-Frame-Options) use
+    the future ResponseHeadersAnalyzer (active via executor).
+    Kept for backward compatibility.
     """
 
     def __init__(self, context: AnalyzerContext):
         super().__init__(context)
+        from apihunter.modules.spec_security_analyzer import SpecSecurityAnalyzer
+
+        self._impl = SpecSecurityAnalyzer(context)
 
     async def analyze(self, spec: SpecResult, scan_run: ScanRun) -> list[Finding]:
-        return []
+        return await self._impl.analyze(spec, scan_run)

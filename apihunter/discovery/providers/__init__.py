@@ -13,6 +13,8 @@ no global registry, keeping the system free of hidden state.
 
 from __future__ import annotations
 
+from apihunter.discovery.providers.crawl import CrawlDiscoveryProvider
+from apihunter.discovery.providers.graphql import GraphQLDiscoveryProvider
 from apihunter.discovery.providers.path import PathDiscoveryProvider
 
-__all__ = ["PathDiscoveryProvider"]
+__all__ = ["PathDiscoveryProvider", "GraphQLDiscoveryProvider", "CrawlDiscoveryProvider"]

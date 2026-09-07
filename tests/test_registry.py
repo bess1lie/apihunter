@@ -22,8 +22,10 @@ def test_registry_registration():
 def test_default_registry():
     registry = get_default_registry()
     analyzers = registry.get_all()
-    assert len(analyzers) == 1
+    assert len(analyzers) == 3
     assert any(a.__name__ == "AuthAnalyzer" for a in analyzers)
+    assert any(a.__name__ == "SpecSecurityAnalyzer" for a in analyzers)
+    assert any(a.__name__ == "InfoLeakAnalyzer" for a in analyzers)
 
 
 def test_experimental_registry():
@@ -31,5 +33,6 @@ def test_experimental_registry():
 
     registry = get_experimental_registry()
     analyzers = registry.get_all()
-    assert len(analyzers) == 7
+    assert len(analyzers) == 8
     assert any(a.__name__ == "InjectionAnalyzer" for a in analyzers)
+    assert any(a.__name__ == "ResponseHeadersAnalyzer" for a in analyzers)

@@ -71,6 +71,8 @@ class Finding:
     title: str
     detail: str | None = None
     remediation: str | None = None
+    endpoint_path: str | None = None
+    endpoint_method: str | None = None
     id: int = 0
     scan_run_id: int = 0
     endpoint_id: int | None = None
