@@ -7,11 +7,12 @@ from apihunter.parser.models import SpecResult
 
 class InfoLeakAnalyzer(BaseAnalyzer):
     """
-    Analyzes for information disclosure via spec metadata.
+    Information disclosure — passive + active.
 
-    Passive heuristics:
-    - Debug / test endpoints exposed (/debug, /test, /status, /admin)
-    - Verbose example responses containing stacktrace / exception keywords
+    Passive: debug/admin path in spec (LOW heuristic, path alone not vuln).
+    Active: body leak markers via probe (MEDIUM/LOW).
+    Evidence includes endpoint + matched marker + snippet.
+    Path alone never HIGH; auth context considered if available.
     """
 
     def __init__(self, context: AnalyzerContext):
@@ -43,13 +44,17 @@ class InfoLeakAnalyzer(BaseAnalyzer):
                 ]
                 for mk in leak_markers:
                     if mk.lower() in body_txt.lower():
+                        snippet = body_txt[:200].replace("\n", " ")
                         findings.append(
                             Finding(
                                 check_type="info_leak",
                                 severity=Severity.MEDIUM,
                                 confidence=Confidence.LOW,
-                                title="Information disclosure in response",
-                                detail=f"Endpoint {ep.path} response contains {mk!r} — possible leak.",
+                                title="Potential Information disclosure in response (heuristic)",
+                                detail=(
+                                    f"Endpoint {ep.path} response contains {mk!r} — possible leak (heuristic).\n"
+                                    f"Evidence: marker={mk!r} snippet={snippet!r} status={result.status_code}"
+                                ),
                                 remediation="Sanitize error responses; disable debug in production.",
                                 endpoint_path=ep.path,
                                 endpoint_method=ep.method,
@@ -59,16 +64,20 @@ class InfoLeakAnalyzer(BaseAnalyzer):
         for ep in spec.endpoints:
             lower_path = ep.path.lower()
             if any(kw in lower_path for kw in ["debug", "trace", "admin", "test"] if len(kw) > 3) and lower_path not in ("/health",):
-                # Only flag obvious debug paths
                 if "/debug" in lower_path or "/admin" in lower_path or lower_path.endswith("/test"):
+                    # Downgrade: path alone is not vulnerability, check auth if known
+                    auth_note = f" auth_required={ep.auth_required}" if ep.auth_required else " auth_required=false (spec heuristic)"
                     findings.append(
                         Finding(
                             check_type="info_leak",
-                            severity=Severity.MEDIUM,
-                            confidence=Confidence.MEDIUM,
-                            title="Potential debug/admin endpoint exposed",
-                            detail=f"Endpoint {ep.path} looks like a debug/admin path exposed in spec.",
-                            remediation="Remove debug endpoints from production spec or protect with auth.",
+                            severity=Severity.LOW,
+                            confidence=Confidence.LOW,
+                            title="Potential debug/admin endpoint exposed (heuristic)",
+                            detail=(
+                                f"Endpoint {ep.path} looks like debug/admin path in spec — heuristic, path alone not vulnerability.\n"
+                                f"Evidence: path={ep.path}{auth_note} exposed_in_spec=true"
+                            ),
+                            remediation="Remove debug endpoints from production spec or protect with auth; verify runtime protection.",
                             endpoint_path=ep.path,
                             endpoint_method=ep.method,
                         )

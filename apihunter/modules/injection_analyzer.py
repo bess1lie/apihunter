@@ -80,21 +80,28 @@ class InjectionAnalyzer(BaseAnalyzer):
         probe_body = (r_probe.body or b"").decode(errors="ignore").lower()
         normal_body = (r_normal.body or b"").decode(errors="ignore").lower()
 
-        # Multiple signs: 500 status + SQL fragment + different from baseline
-        if r_probe.status_code == 500 and 200 <= r_normal.status_code < 300:
-            if any(s in probe_body for s in sql_fragments) and not any(s in normal_body for s in sql_fragments):
-                return [
-                    Finding(
-                        check_type="injection",
-                        severity=Severity.MEDIUM,
-                        confidence=Confidence.LOW,
-                        title="Possible SQL error in response (heuristic)",
-                        detail=f"Endpoint {target_ep.path} probe with ' returned 500 with SQL fragment.",
-                        remediation="Use parameterized queries; sanitize inputs.",
-                        endpoint_path=target_ep.path,
-                        endpoint_method=target_ep.method,
-                    )
-                ]
+        # Heuristic: 500 + SQL fragment vs 2xx baseline, LOW/LOW
+        matched = [s for s in sql_fragments if s in probe_body and s not in normal_body]
+        if r_probe.status_code == 500 and 200 <= r_normal.status_code < 300 and matched:
+            snippet = (r_probe.body or b"").decode(errors="ignore")[:200].replace("\n", " ")
+            return [
+                Finding(
+                    check_type="injection",
+                    severity=Severity.MEDIUM,
+                    confidence=Confidence.LOW,
+                    title="Potential SQL error in response (heuristic)",
+                    detail=(
+                        f"Endpoint {target_ep.path} probe with ' returned 500 with SQL fragment — heuristic, not confirmed injection.\n"
+                        f"Evidence: baseline_status={r_normal.status_code} probe_status={r_probe.status_code} "
+                        f"matched_fragment={matched[0]!r} snippet={snippet!r}\n"
+                        f"Caveat: 500 may be generic error handling; verify with parameterized query review."
+                    ),
+                    remediation="Use parameterized queries; sanitize inputs. Review server logs for actual query error.",
+                    endpoint_path=target_ep.path,
+                    endpoint_method=target_ep.method,
+                )
+            ]
+        # 400 or no fragment → no finding (including 500 without fragment)
         return []
 
 

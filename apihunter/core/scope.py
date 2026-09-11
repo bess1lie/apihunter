@@ -51,6 +51,8 @@ override these to support regex, CIDR ranges, or hostname-suffix rules
 from __future__ import annotations
 
 import fnmatch
+import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -59,6 +61,33 @@ from urllib.parse import urlparse
 import yaml
 
 from apihunter.core.exceptions import ScopeError
+
+_ENV_VAR_RE = re.compile(r"\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _expand_env_token(raw: str | None) -> str | None:
+    """Expand ${VAR} / $VAR from environment, return None if empty/unset."""
+    if not raw or not isinstance(raw, str):
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    # If exactly ${VAR} -> single var expansion
+    m = re.fullmatch(r"\$\{([^}]+)\}", raw)
+    if m:
+        val = os.environ.get(m.group(1))
+        return val.strip() if val and val.strip() else None
+
+    # Generic ${VAR} inside string or $VAR — expand all vars
+    def _repl(match: re.Match[str]) -> str:
+        var = match.group(1) or match.group(2)
+        return os.environ.get(var, "")
+
+    if "${" in raw or "$" in raw:
+        expanded = _ENV_VAR_RE.sub(_repl, raw)
+        expanded = expanded.strip()
+        return expanded if expanded else None
+    return raw
 
 
 @dataclass(frozen=True)
@@ -83,6 +112,8 @@ class Scope:
     deny: list[str] = field(default_factory=list)
     targets: list[str] = field(default_factory=list)
     excluded_extensions: list[str] = field(default_factory=list)
+    # Optional auth config — bearer_token may be "${ENV_VAR}" (recommended) or raw (discouraged)
+    bearer_token: str | None = field(default=None, repr=False)
 
     # ------------------------------------------------------------------
     # Construction
@@ -118,11 +149,21 @@ class Scope:
             return cls()
         if not isinstance(data, dict):
             raise ScopeError(f"Scope file must contain a mapping, got {type(data).__name__}")
+        # Parse auth.bearer_token with env expansion (recommended: "${APIHUNTER_BEARER_TOKEN}")
+        raw_token = None
+        auth_block = data.get("auth")
+        if isinstance(auth_block, dict):
+            raw_token = auth_block.get("bearer_token") or auth_block.get("bearerToken") or auth_block.get("token")
+        # Also support top-level bearer_token for backward compat (discouraged)
+        if raw_token is None and isinstance(data.get("bearer_token"), str):
+            raw_token = data.get("bearer_token")
+        bearer_token = _expand_env_token(raw_token) if isinstance(raw_token, str) else None
         return cls(
             allow=list(data.get("allow", []) or []),
             deny=list(data.get("deny", []) or []),
             targets=list(data.get("targets", []) or []),
             excluded_extensions=list(data.get("excluded_extensions", []) or []),
+            bearer_token=bearer_token,
         )
 
     # ------------------------------------------------------------------
@@ -181,14 +222,21 @@ class Scope:
                 return True
         return False
 
+    def get_bearer_token(self) -> str | None:
+        """Return expanded bearer token if configured, else None. Never logs token."""
+        return self.bearer_token
+
     def to_dict(self) -> dict[str, Any]:
-        """Serialise the scope back to a plain dict (YAML-round-trippable)."""
-        return {
+        """Serialise the scope back to a plain dict (YAML-round-trippable). Redacts token."""
+        d: dict[str, Any] = {
             "allow": list(self.allow),
             "deny": list(self.deny),
             "targets": list(self.targets),
             "excluded_extensions": list(self.excluded_extensions),
         }
+        if self.bearer_token:
+            d["auth"] = {"bearer_token": "***"}
+        return d
 
     # ------------------------------------------------------------------
     # Private matching helpers (override points for future extensions)

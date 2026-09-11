@@ -7,9 +7,11 @@ from apihunter.parser.models import SpecResult
 
 class ResponseHeadersAnalyzer(BaseAnalyzer):
     """
-    Active response header checks via executor.
+    Active response header checks via executor (heuristic + direct facts).
 
-    Checks for missing HSTS (https), X-Content-Type-Options, X-Frame-Options, CSP, Server leaks.
+    - HSTS: only for https target (not http — no finding on http)
+    - X-CTO / X-Frame / CSP: LOW heuristics
+    - Server disclosure: LOW/HIGH direct fact with header values as evidence
     """
 
     def __init__(self, context: AnalyzerContext):
@@ -34,21 +36,28 @@ class ResponseHeadersAnalyzer(BaseAnalyzer):
                     check_type="headers",
                     severity=Severity.MEDIUM,
                     confidence=Confidence.MEDIUM,
-                    title="Missing HSTS header",
-                    detail=f"Endpoint {ep.path} over https missing Strict-Transport-Security.",
+                    title="Missing HSTS header (https)",
+                    detail=(
+                        f"Endpoint {ep.path} over https missing Strict-Transport-Security — direct fact, not vuln by itself.\n"
+                        f"Evidence: target={executor.target} hsts_missing=true headers_present={list(headers.keys())[:5]}"
+                    ),
                     remediation="Add Strict-Transport-Security: max-age=31536000; includeSubDomains",
                     endpoint_path=ep.path,
                     endpoint_method=ep.method,
                 )
             )
-        if "x-content-type-options" not in headers:
+        # Only report missing X-CTO if we actually got a response (headers dict exists)
+        if "x-content-type-options" not in headers and result.headers:
             findings.append(
                 Finding(
                     check_type="headers",
                     severity=Severity.LOW,
                     confidence=Confidence.MEDIUM,
                     title="Missing X-Content-Type-Options",
-                    detail=f"Endpoint {ep.path} missing X-Content-Type-Options: nosniff.",
+                    detail=(
+                        f"Endpoint {ep.path} missing X-Content-Type-Options: nosniff.\n"
+                        f"Evidence: header_x-content-type-options=missing headers={list(headers.keys())[:5]}"
+                    ),
                     remediation="Add X-Content-Type-Options: nosniff",
                     endpoint_path=ep.path,
                     endpoint_method=ep.method,
@@ -61,7 +70,7 @@ class ResponseHeadersAnalyzer(BaseAnalyzer):
                     severity=Severity.LOW,
                     confidence=Confidence.LOW,
                     title="Missing X-Frame-Options / CSP frame-ancestors",
-                    detail=f"Endpoint {ep.path} missing clickjacking protection.",
+                    detail=(f"Endpoint {ep.path} missing clickjacking protection.\nEvidence: x-frame-options=missing csp=missing"),
                     remediation="Add X-Frame-Options: DENY or CSP frame-ancestors",
                     endpoint_path=ep.path,
                     endpoint_method=ep.method,
@@ -75,8 +84,11 @@ class ResponseHeadersAnalyzer(BaseAnalyzer):
                     check_type="headers",
                     severity=Severity.LOW,
                     confidence=Confidence.HIGH,
-                    title="Server header disclosure",
-                    detail=f"Endpoint {ep.path} leaks Server: {server!r} X-Powered-By: {powered!r}",
+                    title="Server header disclosure (direct fact)",
+                    detail=(
+                        f"Endpoint {ep.path} discloses Server/X-Powered-By — configuration fact, not vulnerability.\n"
+                        f"Evidence: Server={server!r} X-Powered-By={powered!r}"
+                    ),
                     remediation="Remove or obscure Server / X-Powered-By headers.",
                     endpoint_path=ep.path,
                     endpoint_method=ep.method,

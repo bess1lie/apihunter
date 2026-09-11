@@ -1,0 +1,19 @@
+services:
+  lab-api:
+    build:
+      context: ./lab
+      dockerfile: Dockerfile
+    image: apihunter-lab:latest
+    ports:
+      - "127.0.0.1:8001:8001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "1000:1000"
+    networks:
+      - lab-net
+    restart: unless-stopped
+
+networks:
+  lab-net:
+    driver: bridge

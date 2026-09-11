@@ -23,3 +23,10 @@ excluded_extensions:
   - jpg
   - css
   - js
+
+# Optional authenticated check — bearer token via environment variable (recommended)
+# Never commit raw tokens. Use ${APIHUNTER_BEARER_TOKEN} and export it locally:
+#   export APIHUNTER_BEARER_TOKEN="lab-test-token"
+# Raw token in YAML is discouraged — if used, keep file chmod 600 and .gitignore it.
+#auth:
+#  bearer_token: "${APIHUNTER_BEARER_TOKEN}"

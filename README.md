@@ -12,88 +12,102 @@
 </p>
 
 <p align="center">
-  <strong>Professional REST API security testing CLI -- OpenAPI discovery, authentication auditing, heuristic scanning, and comprehensive reporting.</strong>
+  <strong>REST API security testing CLI — OpenAPI discovery, scope-aware scanning, heuristic checks with evidence, and SARIF/Markdown/HTML reports.</strong>
 </p>
 
 <p align="center">
-  <a href="#why-apihunter">Why apihunter</a> •
-  <a href="#features">Features</a> •
-  <a href="#architecture">Architecture</a> •
   <a href="#quick-start">Quick Start</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#roadmap">Roadmap</a> •
-  <a href="#contributing">Contributing</a>
+  <a href="#supported-checks">Supported Checks</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#docker-lab">Docker Lab</a> •
+  <a href="#example-scan">Example Scan</a> •
+  <a href="#limitations">Limitations</a>
 </p>
 
-## 🚀 Demo
+## Demo (real output, no CRITICAL hype)
 
 ```bash
-# Discover OpenAPI endpoints
-$ apihunter discover https://api.example.com
-╭──────────────────── Discovered Endpoints ─────────────────────╮
-│ URL                              │ Method │ Auth      │ Status │
-├──────────────────────────────────┼────────┼───────────┼────────┤
-│ https://api.example.com/v1/users │ GET    │ JWT       │ 200    │
-│ https://api.example.com/v1/users │ POST   │ JWT       │ 201    │
-│ https://api.example.com/v1/login │ POST   │ None      │ 200    │
-│ https://api.example.com/v1/admin │ GET    │ JWT+RBAC  │ 403    │
-╰──────────────────────────────────┴────────┴───────────┴────────╯
+$ apihunter discover https://api.example.com --scope scope.yaml
+Discovered 1 specs.
+  - https://api.example.com/openapi.json [high]
 
-# Run security scan
-$ apihunter scan https://api.example.com
-[INFO] Starting scan on 4 endpoints...
-[INFO] Testing authentication: 2 endpoints require JWT
-[INFO] Testing authorization (IDOR)...
-[!] 🔴 CRITICAL: IDOR vulnerability on /v1/users/{id} (GET)
-[!] 🟠 HIGH: Missing rate limiting on /v1/login
-[!] 🟡 MEDIUM: Verbose error message on /v1/debug
-[✓] 🟢 Scan completed in 12.3s
+$ apihunter scan https://api.example.com --scope scope.yaml --profile balanced --allow-private
+Run ID: 1
+Found 1 specs. Parsing and scanning...
 
-# Generate HTML report
-$ apihunter report <run_id> --format html
-[✓] 🟢 Report saved to report_<run_id>.html
+Scan completed  Duration: 2.4s
+Endpoints: 5  Requests: 12  Findings: 4
+HIGH: 1  MEDIUM: 1  LOW: 2  INFO: 0
+┌──────────┬────────────┬─────────────────────────────────────────────┬──────────────────────┬────────────────────────┐
+│ Severity │ Confidence │ Title                                       │ Endpoint             │ Evidence               │
+├──────────┼────────────┼─────────────────────────────────────────────┼──────────────────────┼────────────────────────┤
+│ HIGH     │ HIGH       │ CORS wildcard with credentials              │ GET /api/search      │ ACAO='*' ACAC='true'   │
+│ LOW      │ LOW        │ Potential BOLA/IDOR (heuristic)             │ GET /api/users/{id}  │ status1=200 status2=.. │
+│ LOW      │ LOW        │ No rate limiting observed (heuristic)       │ POST /api/login      │ statuses=[200..]       │
+│ MEDIUM   │ LOW        │ Potential Information disclosure (heuristic)│ GET /api/debug       │ marker='Traceback'     │
+└──────────┴────────────┴─────────────────────────────────────────────┴──────────────────────┴────────────────────────┘
+Scan complete.
+
+$ apihunter report 1 --format html -o report.html
+Report saved to report.html
 ```
 
-## 🧐 Why apihunter?
+> Heuristic ≠ vulnerability. See [docs/checks.md](docs/checks.md) for confidence criteria and false-positive notes.
+
+## Why apihunter?
 
 | Problem | Manual approach | With apihunter |
 |---------|-----------------|----------------|
-| **Finding OpenAPI specs** | `grep`, `curl`, guesswork across dozens of endpoints | **Automatic discovery** -- detects Swagger/OpenAPI, GraphQL introspection, and common API patterns |
-| **Authentication analysis** | Manual Burp testing, checking each endpoint individually | **Automated auth auditing** -- identifies JWT, OAuth, Basic Auth, and missing auth |
-| **Security heuristics** | Random testing, no systematic coverage | **Built-in heuristics** -- IDOR, CORS misconfigurations, injection points, rate limiting |
-| **Tracking findings** | Spreadsheets or scattered notes | **SQLite database** + **HTML/Markdown/SARIF** reports with severity badges |
-| **CI/CD integration** | Custom scripts that break easily | **CLI-friendly** -- exit codes, JSON output, and SARIF for GitHub Code Scanning |
+| Finding OpenAPI specs | `grep`, `curl`, guesswork | Automatic discovery — 22 well-known paths + GraphQL + crawl |
+| Authentication analysis | Manual Burp per endpoint | Passive + active probe with evidence |
+| Security heuristics | Random testing | 8 built-in checks, each with severity/confidence/evidence |
+| Tracking findings | Spreadsheets | SQLite (XDG) + HTML/Markdown/SARIF with severity badges |
+| CI/CD | Custom scripts | CLI with exit codes + SARIF for GitHub Code Scanning |
 
-## ✨ Features
+## Features
 
-- 🔎 **OpenAPI / Swagger Discovery** -- probes 22 well-known paths (`/openapi.json`, `/swagger.json`, `/v3/api-docs`, `/graphql`, etc.), parses OpenAPI 2.0/3.0 & Swagger `host+basePath`.
-- 🔐 **Authentication Detection** -- detects missing `securitySchemes`, `auth_required` without schemes, and unauthenticated sensitive paths (`/admin`, `/user`, …).
-- 🛡️ **Heuristic Security Scanning** -- active (implemented):
-  - Missing authentication schemes (HIGH)
-  - CORS misconfigurations (Origin reflection, wildcard+credentials)
-  - IDOR/BOLA (path param mutation heuristic)
-  - Rate limiting (5-probe heuristic)
-  - Injection (safe SQL probe)
-  - Insecure `http://` servers / Response headers (HSTS/CSP)
-  - Info Leak (active body markers / debug endpoints)
-- 📊 **Multi‑format Reports** -- HTML (XSS-escaped + CSP), Markdown, SARIF 2.1.0 for GitHub Code Scanning.
-- 🗄️ **Local SQLite Storage** -- WAL + FK, parameterized, every scan stored with XDG `~/.local/share/apihunter/apihunter.db`.
-- ⚙️ **Scope‑aware** -- `allow/deny/targets/excluded_extensions` enforced on **every** request (`docs/scope.md`).
-- 🧩 **Extensible** -- `AnalyzerContext(target, scope, client)` + `AnalyzerRegistry` for custom checks.
+- OpenAPI / Swagger Discovery — probes 22 paths (`/openapi.json`, `/swagger.json`, `/v3/api-docs`, `/graphql`…), parses OpenAPI 2.0/3.0 & Swagger `host+basePath`.
+- Authentication Detection — missing `securitySchemes`, `auth_required` without schemes, sensitive paths (heuristic LOW).
+- Heuristic Scanning — see [Supported Checks](#supported-checks).
+- Multi-format Reports — HTML (XSS-escaped + CSP), Markdown, SARIF 2.1.0 (`properties.evidence` + `properties.confidence`).
+- Local SQLite Storage — WAL + FK, parameterized, XDG `~/.local/share/apihunter/apihunter.db` (or `apihunter.db` legacy).
+- Scope-aware — `allow/deny/targets/excluded_extensions` enforced on every request ([docs/scope.md](docs/scope.md)).
+- Extensible — `AnalyzerContext(target, scope, client, executor)` + `AnalyzerRegistry`.
 
-## 🛠️ Tech Stack
+## Supported Checks
 
-- **Language:** [Python 3.11+](https://www.python.org/)
-- **CLI:** [Typer](https://typer.tiangolo.com/)
-- **Terminal output:** [Rich](https://rich.readthedocs.io/)
-- **HTTP client:** [HTTPX](https://www.python-httpx.org/)
-- **Storage:** [SQLite](https://www.sqlite.org/)
-- **Reports:** [Jinja2](https://jinja.palletsprojects.com/)
-- **Config:** [PyYAML](https://pyyaml.org/)
+Details, evidence, and false-positive notes: [docs/checks.md](docs/checks.md).
 
-## 🏗️ Architecture
+### Direct Configuration Findings (spec/header facts — not automatically vulns)
 
-<!-- pypi:skip -->
+| Check | Severity | Confidence | Evidence |
+|---|---|---|---|
+| `spec_security` http `servers[]` URL | MEDIUM | HIGH | `server_url='http://...' scheme=http` |
+| `spec_security` missing securitySchemes | LOW | MEDIUM | `components.securitySchemes=missing` |
+| `headers` Server disclosure | LOW | HIGH | `Server='nginx/1.18'` |
+| `headers` Missing HSTS (https only) | MEDIUM | MEDIUM | `hsts_missing=true` |
+
+### Heuristic Security Findings (require manual verification)
+
+| Check | Severity | Confidence | Evidence |
+|---|---|---|---|
+| `idor` Potential BOLA/IDOR | LOW | LOW | `status1=200 status2=200 body_len1=... body_len2=...` — needs 2 auth contexts |
+| `auth` Potentially Unauthenticated Sensitive Endpoint | LOW | LOW | `path=/admin auth_required=false` — path alone not vuln |
+| `auth` Potential auth bypass (heuristic) | HIGH | MEDIUM | `status=200 body_len=... auth_required=true` — 401/403 → no finding |
+| `cors` Wildcard with credentials | HIGH | HIGH | `ACAO='*' ACAC='true'` |
+| `cors` Wildcard without credentials | INFO | MEDIUM | `ACAO='*'` — often intentional |
+| `cors` Reflected arbitrary Origin | MEDIUM/HIGH | MEDIUM | `ACAO='https://example-attacker.invalid' Vary='...'` |
+| `rate_limit` No rate limiting observed | LOW | LOW | `statuses=[200x5] no_429=true` — not a vuln alone |
+| `injection` Potential SQL error | MEDIUM | LOW | `baseline_status=200 probe_status=500 matched_fragment='sql syntax'` — safe `'` probe only |
+| `info_leak` Debug/admin path exposed | LOW | LOW | `path=/api/debug exposed_in_spec=true` |
+| `info_leak` Information disclosure in body | MEDIUM | LOW | `marker='Traceback' snippet='...'` |
+
+## Tech Stack
+
+- Python 3.11+, Typer, Rich, HTTPX, SQLite, Jinja2, PyYAML
+
+## Architecture
+
 ```mermaid
 graph TD
     A[CLI Entry] --> B{Command}
@@ -101,27 +115,22 @@ graph TD
     B -->|scan| D[Scan Engine]
     B -->|report| E[Report Generator]
     B -->|db| F[Database Manager]
-    
     C --> G[OpenAPI Parser]
     C --> H[GraphQL Introspection]
     C --> I[Common Patterns]
-    
     D --> J[Heuristic Modules]
     J --> K[IDOR Checker]
     J --> L[CORS Checker]
     J --> M[Auth Checker]
     J --> N[Injection Detector]
-    
     D --> F
     D --> O[Results]
     O --> E
     E --> P[HTML Report]
     E --> Q[Markdown Report]
     E --> R[SARIF Report]
-    
     F --> S[SQLite Storage]
     S --> O
-    
     style A fill:#58a6ff,stroke:#1f6feb,color:#fff
     style C fill:#3fb950,stroke:#2ea043
     style D fill:#d29922,stroke:#9e6a03
@@ -129,77 +138,55 @@ graph TD
     style F fill:#f85149,stroke:#da3633
 ```
 
-- **Discovery Engine**: Injects providers to probe target surfaces.
-- **Scanner Engine**: Executes specialized analyzers against discovered endpoints.
-- **Core**: Manages the database, HTTP client, and scope.
+- **Discovery Engine**: providers probe target surfaces (scope + concurrency + max_size).
+- **Scanner Engine**: Executor (budget + scope) → parse_spec → registry → analyzers → DB.
+- **Core**: HttpClient (single network point, SSRF guard, 2MB cap, redirect re-validation) + Scope + DB/Queries.
 
-## 📦 Installation
+## Installation
 
 ```bash
-# From PyPI (recommended) — detection-only, no payloads
 pip install apihunter-bess1lie
-# CLI stays `apihunter`
 apihunter --help
 
-# Isolated with pipx (recommended for tools)
 pipx install apihunter-bess1lie
 
-# From source (latest dev)
 git clone https://github.com/bess1lie/apihunter.git
 cd apihunter
 pip install -e .
 ```
 
-## ⚡ Quick Start
-
-### Basic usage (scope-aware)
+## Quick Start
 
 ```bash
-# 0. Create scope.yaml — every request gated by allowlist
 cat > scope.yaml <<'YAML'
 allow: ["api.example.com"]
 targets: ["https://api.example.com"]
 YAML
 
-# 1. Discover endpoints
 apihunter discover https://api.example.com --scope scope.yaml
-
-# 2. Scan — profiles: safe (passive+light active, 10 req), balanced (20), aggressive (50)
-apihunter scan https://api.example.com --scope scope.yaml --profile safe
-apihunter scan https://api.example.com --scope scope.yaml --profile balanced  # default active: auth, IDOR, CORS
-apihunter scan https://api.example.com --scope scope.yaml --profile aggressive --max-requests 50 --rate-limit 10
-
-# 3. Report + SARIF for GitHub Code Scanning
-apihunter report <run_id> --format html -o report.html
-apihunter report <run_id> --format sarif -o apihunter.sarif
-
-# Verify install
+apihunter scan https://api.example.com --scope scope.yaml --profile balanced
+apihunter report 1 --format html -o report.html
+apihunter report 1 --format sarif -o apihunter.sarif
 apihunter --help && apihunter version
 ```
 
-> Requires `scope.yaml` — out-of-scope requests are blocked. See `scope.example.yaml` and `docs/scope.md`.
+> Requires `scope.yaml` — out-of-scope requests are blocked. See [scope.example.yaml](scope.example.yaml) and [docs/scope.md](docs/scope.md).
 
-## ⚙️ Configuration
-
-Create a `scope.yaml` file to define your testing boundaries (see `docs/scope.md`):
+## Configuration
 
 ```yaml
-allow:
-  - "api.example.com"
-  - "*.example.com"
-deny:
-  - "cdn.example.com"
-targets:
-  - "https://api.example.com"
-excluded_extensions:
-  - png
-  - css
-  - js
+allow: ["api.example.com", "*.example.com"]
+deny: ["cdn.example.com"]
+targets: ["https://api.example.com"]
+excluded_extensions: [png, css, js]
+# Optional authenticated check (prefer env var, never commit raw token):
+#auth:
+#  bearer_token: "${APIHUNTER_BEARER_TOKEN}"
 ```
 
-All keys optional; empty = fail-closed. `allow` supports `*.` wildcards, bare domain matches subdomains.
+All keys optional; empty = fail-closed. `allow` supports `*.` wildcards, bare domain matches subdomains. For authenticated bypass comparison, set `auth.bearer_token: "${APIHUNTER_BEARER_TOKEN}"` and `export APIHUNTER_BEARER_TOKEN="..."` — token is expanded from env, never stored in DB/reports/logs (see [docs/checks.md](docs/checks.md) — Authentication Bypass).
 
-## 🎛️ Scan Profiles (1.2.0)
+## Scan Profiles
 
 | Profile | Max requests | Rate | Checks |
 |---------|--------------|------|--------|
@@ -213,59 +200,140 @@ apihunter scan https://api.example.com --scope scope.yaml --profile balanced --t
 apihunter scan https://api.example.com --scope scope.yaml --profile aggressive --max-requests 50
 ```
 
-All profiles respect `scope.yaml`, `2MB` limit, timeout, and `allow_private=false` by default.
+All profiles respect `scope.yaml`, `2MB` limit, timeout, and `allow_private=false` by default (use `--allow-private` for lab).
 
-## 🔄 Comparison with alternatives
+## Docker Lab
+
+Isolated local lab — no external exposure, binds `127.0.0.1` only.
+
+```bash
+docker compose -f docker-compose.lab.yml up -d
+curl http://127.0.0.1:8001/openapi.json  # lab spec
+
+apihunter discover http://127.0.0.1:8001 --scope lab/scope.yaml
+apihunter scan http://127.0.0.1:8001 --scope lab/scope.yaml --profile balanced --allow-private
+apihunter report 1 --format html -o lab-report.html
+apihunter report 1 --format sarif -o lab.sarif
+
+docker compose -f docker-compose.lab.yml down
+```
+
+**Lab endpoints:**
+
+| Endpoint | Scenario | Expected finding |
+|---|---|---|
+| `GET /api/users/{id}` | `id=1` vs `id=2` both 200, different bodies | `Potential BOLA/IDOR (heuristic)` LOW/LOW |
+| `GET /api/admin` | 200 without auth (spec says auth required) | `Potential Authentication Bypass (heuristic)` HIGH/MEDIUM |
+| `GET /api/debug` | `Traceback` body | `Potential Information disclosure (heuristic)` MEDIUM/LOW |
+| `POST /api/login` | 5x 200 without 429 | `No rate limiting observed (heuristic)` LOW/LOW |
+| `GET /api/search?q='` | `q='` → 500 + `SQL syntax` | `Potential SQL error (heuristic)` MEDIUM/LOW |
+| `GET /api/protected` | `auth_required=true`, 200 without and with `lab-test-token` → both 200 | `Potential Authentication Bypass (heuristic)` HIGH/MEDIUM (with `auth.bearer_token`) |
+| All | `ACAO:*` + `ACAC:true` + `Server: lab-nginx` | `CORS wildcard with credentials` HIGH/HIGH, `Server header` LOW/HIGH |
+
+Lab is `read_only` + `tmpfs /tmp` + dedicated `lab-net` bridge. No AI, no destructive payloads.
+
+**Authenticated bypass demo (lab):**
+
+```bash
+export APIHUNTER_BEARER_TOKEN="lab-test-token"
+apihunter scan http://127.0.0.1:8001 --scope lab/scope.auth.yaml --profile balanced --allow-private
+# Evidence: unauthenticated_status=200 authenticated_status=200 ... (token never stored)
+```
+
+## Example Scan
+
+See **Demo** above. CLI summary now shows `Endpoints / Requests / Findings / Duration` + `HIGH/MEDIUM/LOW/INFO` + Rich table with `Severity | Confidence | Title | Endpoint | Evidence`. Reports include confidence and evidence; SARIF has `properties.evidence` and `properties.confidence`.
+
+## Detection Confidence
+
+- **HIGH:** direct fact (spec or header) — e.g. `Server: nginx`, `ACAO:*`+credentials.
+- **MEDIUM:** active probe with evidence but not exploit proof — e.g. CORS reflected, auth 2xx.
+- **LOW:** heuristic with insufficient context — e.g. IDOR 200 vs 200, injection 500+fragment.
+
+Never artificially inflated. See [docs/checks.md](docs/checks.md).
+
+## Limitations
+
+- Heuristics are not exploits: IDOR needs 2 user tokens; rate-limit needs higher volume; injection needs code review.
+- Auth `sensitive path` without `auth_required` is LOW — public endpoints may be intentional.
+- CORS `*` without credentials is INFO — often intentional for public APIs.
+- Missing HSTS is only reported for `https://` targets.
+- Safe `'` probe only — no destructive, no blind timing.
+
+## False Positive Caveat
+
+> **Do not treat heuristic findings as confirmed vulnerabilities.** Every finding with `(heuristic)` in the title or `confidence: low` requires manual verification. Change severity only after you have proof (second user token, replay, code review, or server logs). Config facts (`spec_security`, `Server header`) are facts, not vulnerabilities, unless runtime confirms exposure.
+
+## Tests
+
+```bash
+pip install -e ".[dev]"
+pytest --cov --cov-report=term-missing --cov-report=xml
+ruff check apihunter/ tests/
+ruff format --check apihunter/ tests/
+```
+
+Coverage threshold is 80%. Tests cover positive + negative cases per analyzer (severity, confidence, evidence, no false positive) using `AsyncMock` + `respx` + `anyio`.
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest -q
+ruff check apihunter/ tests/ --fix
+mypy apihunter/ --ignore-missing-imports  # optional, not required for CI pass
+```
+
+## Comparison with alternatives
 
 | Feature | apihunter | Postman | OWASP ZAP | Burp Suite | Custom scripts |
 |---------|-----------|---------|-----------|------------|----------------|
 | OpenAPI Discovery | ✅ | ❌ (manual) | ❌ (add‑on) | ❌ (manual) | ❌ |
 | Authentication Analysis | ✅ | ❌ | ✅ | ✅ | ❌ |
-| Heuristic Scanning | ✅ | ❌ | ✅ | ✅ | ❌ |
+| Heuristic Scanning (with evidence) | ✅ | ❌ | ✅ | ✅ | ❌ |
 | Reports (HTML/Markdown/SARIF) | ✅ | ❌ | ✅ | ✅ | ❌ |
 | CI/CD Friendly | ✅ | ❌ | ✅ | ❌ | ✅ |
 | Lightweight CLI | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Scope‑aware | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-## 🗺️ Roadmap
+## Roadmap
 
 | Status | Feature |
 |--------|---------|
 | ✅ | OpenAPI 2.0/3.0 discovery + crawl (robots/sitemap/HTML) |
 | ✅ | GraphQL introspection (`/graphql` POST) |
-| ✅ | HTML / Markdown / SARIF (real locations) |
-| ✅ | SQLite storage + scope-aware gating + executor |
+| ✅ | HTML / Markdown / SARIF with confidence + evidence |
+| ✅ | SQLite + scope-aware gating + executor |
 | ✅ | Auth (passive + active bypass probe) |
 | ✅ | IDOR/BOLA heuristic (active) |
 | ✅ | CORS (active Origin probe) |
 | ✅ | Rate limiting (5-probe heuristic) |
-| ✅ | Injection safe probe (' + SQL fragment) |
+| ✅ | Injection safe probe |
 | ✅ | Spec security + response headers (HSTS/CSP) |
 | ✅ | Info leak (passive + active body markers) |
+| ✅ | Docker security lab (localhost only) |
 | 🚧 | Plugin system for custom checks |
 | 🔮 | OpenTelemetry integration |
-| 🔮 | Web UI dashboard |
-| 🔮 | Kubernetes operator |
 
-## 🤝 Contributing
+## Contributing
 
-Pull requests are welcome. For major changes, open an issue first to discuss what you would like to change.
+Pull requests welcome. For major changes, open an issue first.
 
-## 🛡️ Security
+## Security
 
-If you find a vulnerability, please report it privately to [bess1iework@gmail.com](mailto:bess1iework@gmail.com) — see [SECURITY.md](SECURITY.md).
+If you find a vulnerability, report privately to [bess1iework@gmail.com](mailto:bess1iework@gmail.com) — see [SECURITY.md](SECURITY.md).
 
-> **PyPI name:** `pip install apihunter-bess1lie` (import `apihunter`, CLI `apihunter`). The short name `apihunter` is reserved for a future 1.x alias.
+> **PyPI name:** `pip install apihunter-bess1lie` (import `apihunter`, CLI `apihunter`).
 
-## 📄 License
+## License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+MIT — see [LICENSE](LICENSE).
 
-## 🌐 More Tools
+## More Tools
 
-- [**bounthunt**](https://github.com/bess1lie/bounthunt) - Bug bounty reconnaissance and automation.
-- [**gqlhunter**](https://github.com/bess1lie/gqlhunter) - GraphQL security testing and introspection.
+- [bounthunt](https://github.com/bess1lie/bounthunt)
+- [gqlhunter](https://github.com/bess1lie/gqlhunter)
 
 <p align="center">
-  <sub>detection-first · scope-aware · <a href="https://bess1lie.github.io">bess1lie.github.io</a> · <a href="mailto:bess1iework@gmail.com">contact</a></sub>
+  <sub>detection-first · scope-aware · evidence-driven · <a href="https://bess1lie.github.io">bess1lie.github.io</a></sub>
 </p>

@@ -34,8 +34,11 @@ class SpecSecurityAnalyzer(BaseAnalyzer):
                         check_type="spec_security",
                         severity=Severity.MEDIUM,
                         confidence=Confidence.HIGH,
-                        title="Insecure server URL (http)",
-                        detail=f"Server URL {url!r} uses plain http — should be https with HSTS.",
+                        title="Insecure server URL (http) — direct config fact",
+                        detail=(
+                            f"Server URL {url!r} uses plain http — configuration fact, not confirmed vulnerability.\n"
+                            f"Evidence: server_url={url!r} scheme=http"
+                        ),
                         remediation="Use https:// and set Strict-Transport-Security.",
                         endpoint_path=None,
                         endpoint_method=None,
@@ -49,8 +52,11 @@ class SpecSecurityAnalyzer(BaseAnalyzer):
                     check_type="spec_security",
                     severity=Severity.LOW,
                     confidence=Confidence.MEDIUM,
-                    title="No securitySchemes defined",
-                    detail="Spec requires auth but defines no securitySchemes — clients cannot know how to auth.",
+                    title="No securitySchemes defined (direct config fact)",
+                    detail=(
+                        "Spec requires auth but defines no securitySchemes — direct spec fact, not vulnerability.\n"
+                        "Evidence: components.securitySchemes=missing auth_required_endpoints>0"
+                    ),
                     remediation="Define components/securitySchemes (JWT, OAuth2, etc.).",
                     endpoint_path=None,
                     endpoint_method=None,

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
 import typer
 import yaml
 from rich.console import Console
+from rich.table import Table
 
 from apihunter.core.db import Database
 from apihunter.core.exceptions import ApihunterError, PermanentHttpError, ScopeError
@@ -72,6 +74,7 @@ def discover(
     scope: str | None = typer.Option(None, "--scope", "-s", help="Path to scope.yaml"),
     db: str | None = typer.Option(None, "--db", help="SQLite DB path (default: ~/.local/share/apihunter/apihunter.db)"),
     output: str | None = typer.Option(None, "--output", "-o", help="Write discovered specs as JSON to file"),
+    allow_private: bool = typer.Option(False, "--allow-private", help="Allow private/link-local IPs (lab use)"),
 ):
     """Discover API endpoints using various providers."""
     _validate_target(target)
@@ -85,7 +88,7 @@ def discover(
         raise typer.Exit(code=2)
 
     async def _run_discovery():
-        async with HttpClient() as client:
+        async with HttpClient(allow_private=allow_private, scope=scope_obj) as client:
             providers = [
                 PathDiscoveryProvider(client, scope=scope_obj),
                 GraphQLDiscoveryProvider(client, scope=scope_obj),
@@ -156,6 +159,9 @@ def scan(
     _rate = rate_limit if rate_limit is not None else _profile_map[profile]["rate"]
     _timeout = timeout if timeout is not None else 10.0
 
+    executor_holder: dict = {}
+    start_ts = time.monotonic()
+
     async def _perform_scan(run_id: int):
         async with HttpClient(allow_private=allow_private, timeout=_timeout, rate_per_second=_rate, scope=scope) as client:
             providers = [
@@ -167,6 +173,7 @@ def scan(
             discovery_result = await discovery.run(target)
             # Global executor for whole scan (not per-spec) — enforces profile budget across all specs
             executor = Executor(client, scope, target, max_requests=_max_req, timeout=_timeout)
+            executor_holder["executor"] = executor
             if profile == "safe":
                 registry = get_default_registry()
             else:
@@ -283,6 +290,48 @@ def scan(
         run_id = database.create_scan_run(target)
         console.print(f"Run ID: [bold]{run_id}[/bold]")
         asyncio.run(_perform_scan(run_id))
+        duration = time.monotonic() - start_ts
+        # --- Summary (best-effort, no hard failure if DB closed) ---
+        try:
+            findings = queries.get_findings(run_id)
+            endpoints = queries.get_endpoints(run_id)
+            req_count = executor_holder.get("executor")._request_count if executor_holder.get("executor") else 0  # type: ignore
+            sev_counts = {"high": 0, "medium": 0, "low": 0, "info": 0, "critical": 0}
+            for f in findings:
+                sev = str(f.severity).lower()
+                if sev in sev_counts:
+                    sev_counts[sev] += 1
+                elif sev == "critical":
+                    sev_counts["critical"] += 1
+            console.print("")
+            console.print(f"[bold]Scan completed[/bold]  Duration: {duration:.1f}s")
+            console.print(f"Endpoints: {len(endpoints)}  Requests: {req_count}  Findings: {len(findings)}")
+            console.print(
+                f"HIGH: {sev_counts['high'] + sev_counts['critical']}  "  # noqa: E501
+                f"MEDIUM: {sev_counts['medium']}  LOW: {sev_counts['low']}  INFO: {sev_counts['info']}"
+            )
+            if findings:
+                table = Table(show_header=True, header_style="bold")
+                table.add_column("Severity")
+                table.add_column("Confidence")
+                table.add_column("Title")
+                table.add_column("Endpoint")
+                table.add_column("Evidence")
+                for f in findings[:20]:
+                    sev = str(f.severity).upper()
+                    conf = str(f.confidence).upper()
+                    ep = f"{f.endpoint_method or ''} {f.endpoint_path or '-'}".strip()
+                    ev = ""
+                    if f.detail and "Evidence:" in f.detail:
+                        ev = f.detail.split("Evidence:", 1)[1].strip().split("\n")[0][:80]
+                    elif f.detail:
+                        ev = f.detail[:80]
+                    table.add_row(sev, conf, f.title[:60], ep, ev)
+                console.print(table)
+                if len(findings) > 20:
+                    console.print(f"[dim]... and {len(findings) - 20} more findings (see report)[/dim]")
+        except Exception:
+            pass
         console.print("[green]Scan complete.[/green]")
     except typer.Exit:
         raise

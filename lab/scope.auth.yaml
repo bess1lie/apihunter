@@ -1,0 +1,4 @@
+allow: ["127.0.0.1", "localhost"]
+targets: ["http://127.0.0.1:8001"]
+auth:
+  bearer_token: "${APIHUNTER_BEARER_TOKEN}"

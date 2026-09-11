@@ -62,17 +62,24 @@ def generate_sarif(findings: list[Finding]) -> str:
         msg = f"{f.title}: {f.detail}" if f.detail else f.title
         if getattr(f, "endpoint_method", None):
             msg = f"[{f.endpoint_method} {f.endpoint_path}] {msg}"
+        # Extract Evidence block from detail for SARIF properties
+        evidence = None
+        if f.detail and "Evidence:" in f.detail:
+            evidence = f.detail.split("Evidence:", 1)[1].strip()[:2000]
+        props: dict[str, str] = {
+            "severity": str(f.severity),
+            "confidence": str(f.confidence),
+            "check_type": f.check_type,
+        }
+        if evidence:
+            props["evidence"] = evidence
         sarif["runs"][0]["results"].append(
             {
                 "ruleId": f"AP-{f.check_type.upper()}",
                 "message": {"text": msg},
                 "level": level_map.get(str(f.severity).lower(), "warning"),
                 "locations": [{"physicalLocation": {"artifactLocation": {"uri": uri}}}],
-                "properties": {
-                    "severity": str(f.severity),
-                    "confidence": str(f.confidence),
-                    "check_type": f.check_type,
-                },
+                "properties": props,
             }
         )
 

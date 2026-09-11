@@ -7,12 +7,14 @@ from apihunter.parser.models import SpecResult
 
 class IDORAnalyzer(BaseAnalyzer):
     """
-    BOLA/IDOR heuristic (active, safe, LOW/MEDIUM only).
+    BOLA/IDOR heuristic — LOW confidence only (no ownership context).
 
-    For endpoints with object-like path params ({id}, {userId}, {accountId}, etc.):
-    - probe id=1 and id=2 (or 1 vs 999999)
+    For endpoints with object-like path params ({id}, {userId}, ...):
+    - probe id=1 and id=2
     - compare status/body size
-    - heuristic, not confirmed vuln (no ownership context)
+    - heuristic only: confirmed bypass requires two different auth contexts
+      (victim vs attacker token) — this analyzer has no second token.
+    Confidence is always LOW; severity downgraded to LOW for 200 vs 200 case.
     """
 
     OBJECT_PARAM_HINTS = ("id", "user", "account", "order", "profile", "org", "team")
@@ -35,8 +37,12 @@ class IDORAnalyzer(BaseAnalyzer):
                                 check_type="idor",
                                 severity=Severity.LOW,
                                 confidence=Confidence.LOW,
-                                title="Endpoint with object reference",
-                                detail=f"Endpoint {ep.path} uses object-like path param — review for BOLA/IDOR manually.",
+                                title="Potential BOLA/IDOR (heuristic) — object reference",
+                                detail=(
+                                    f"Endpoint {ep.path} uses object-like path param — review for BOLA/IDOR manually.\n"
+                                    f"Evidence: path={ep.path} param_hint=object-id heuristic_only=true\n"
+                                    f"Caveat: requires two auth contexts (different users) to confirm ownership bypass."
+                                ),
                                 remediation="Enforce authorization checks on object access; use indirect references.",
                                 endpoint_path=ep.path,
                                 endpoint_method=ep.method,
@@ -75,39 +81,34 @@ class IDORAnalyzer(BaseAnalyzer):
             probed += 1
             if not r1 or not r2:
                 continue
-            # Both 200 but bodies differ -> possible IDOR/BOLA (heuristic)
+            # Both 200 but bodies differ -> possible IDOR/BOLA (heuristic, LOW/LOW)
             if r1.status_code == 200 and r2.status_code == 200:
                 b1, b2 = r1.body or b"", r2.body or b""
-                # If bodies identical -> less interesting; if different size but both 200 -> LOW
-                if b1 != b2 and abs(len(b1) - len(b2)) < max(len(b1), len(b2)) * 0.5:
-                    findings.append(
-                        Finding(
-                            check_type="idor",
-                            severity=Severity.MEDIUM,
-                            confidence=Confidence.LOW,
-                            title="Possible BOLA/IDOR (heuristic)",
-                            detail=(
-                                f"Endpoint {ep.path} returned 200 for both id=1 ({len(b1)}B) and id=2 ({len(b2)}B) "
-                                f"without ownership context — manual verification needed."
-                            ),
-                            remediation="Verify authorization on object access; test with two users' tokens.",
-                            endpoint_path=ep.path,
-                            endpoint_method=ep.method,
-                        )
+                # Identical bodies → no finding (likely static / same object)
+                if b1 == b2:
+                    continue
+                # Downgrade: any 200 vs 200 without ownership proof is LOW
+                len1, len2 = len(b1), len(b2)
+                diff = abs(len1 - len2)
+                similar = diff < max(len1, len2) * 0.5 if max(len1, len2) else False
+                title = "Potential BOLA/IDOR (heuristic)" if similar else "Object reference with differing responses (heuristic)"
+                detail = (
+                    f"Endpoint {ep.path} returned 200 for both id=1 and id=2 without ownership context — manual verification needed.\n"
+                    f"Evidence: status1=200 status2=200 body_len1={len1} body_len2={len2} diff={diff} similar_size={similar}\n"
+                    f"Heuristic only: requires two auth contexts (victim vs attacker) to confirm ownership bypass."
+                )
+                findings.append(
+                    Finding(
+                        check_type="idor",
+                        severity=Severity.LOW,
+                        confidence=Confidence.LOW,
+                        title=title,
+                        detail=detail,
+                        remediation="Verify authorization on object access; test with two users' tokens.",  # noqa: E501
+                        endpoint_path=ep.path,
+                        endpoint_method=ep.method,
                     )
-                elif b1 != b2:
-                    findings.append(
-                        Finding(
-                            check_type="idor",
-                            severity=Severity.LOW,
-                            confidence=Confidence.LOW,
-                            title="Object reference with differing responses",
-                            detail=f"Endpoint {ep.path} differs for id=1 vs id=2 — review for IDOR.",
-                            remediation="Check authorization per object.",
-                            endpoint_path=ep.path,
-                            endpoint_method=ep.method,
-                        )
-                    )
+                )
         return findings
 
     def _build_url_for_id(self, path: str, val: str) -> str | None:

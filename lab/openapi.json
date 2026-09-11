@@ -1,0 +1,52 @@
+{
+  "openapi": "3.0.0",
+  "info": {"title": "ApiHunter Lab", "version": "1.0.0"},
+  "servers": [{"url": "http://127.0.0.1:8001"}],
+  "paths": {
+    "/api/users/{id}": {
+      "get": {
+        "summary": "Get user by id",
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "OK"}},
+        "security": [{"bearerAuth": []}]
+      }
+    },
+    "/api/admin": {
+      "get": {
+        "summary": "Admin panel",
+        "responses": {"200": {"description": "OK"}},
+        "security": [{"bearerAuth": []}]
+      }
+    },
+    "/api/debug": {
+      "get": {
+        "summary": "Debug endpoint",
+        "responses": {"200": {"description": "OK"}}
+      }
+    },
+    "/api/login": {
+      "post": {
+        "summary": "Login",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object"}}}},
+        "responses": {"200": {"description": "OK"}}
+      }
+    },
+    "/api/search": {
+      "get": {
+        "summary": "Search",
+        "parameters": [{"name": "q", "in": "query", "required": false, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "OK"}}
+      }
+    },
+    "/api/protected": {
+      "get": {
+        "summary": "Protected resource (lab demo for authenticated bypass)",
+        "responses": {"200": {"description": "OK"}, "401": {"description": "Unauthorized"}},
+        "security": [{"bearerAuth": []}]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}
+  }
+}
